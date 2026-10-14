@@ -17,7 +17,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "stripe": "^18.0.0",
-    "zod": "^3.24.0"
+    "zod": "^3.24.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@types/node": "^22",
