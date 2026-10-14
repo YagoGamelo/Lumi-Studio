@@ -1,4 +1,4 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 export async function serverDb() {
   const store = await cookies();
@@ -8,7 +8,7 @@ export async function serverDb() {
     {
       cookies: {
         getAll() { return store.getAll(); },
-        setAll(items) {
+        setAll(items: { name: string; value: string; options: CookieOptions }[]) {
           try { items.forEach(({name,value,options}) => store.set(name,value,options)); }
           catch { /* Server Components cannot mutate response cookies. Middleware refreshes sessions. */ }
         }
