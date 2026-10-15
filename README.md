@@ -110,3 +110,20 @@ O painel **Stream Studio** inclui agora o módulo **Emitir em direto**, que comp
 **Limitações:** a qualidade depende do navegador, hardware e rede; não há garantia de estabilidade para 24/7, transmissão multiplataforma sem serviço, gravação na nuvem, reconexão automática com failover, plugins nativos OBS ou captura direta de jogos protegidos. Fazer testes privados antes de emitir publicamente.
 
 Referências técnicas: [RFC 9725 WHIP](https://www.rfc-editor.org/rfc/rfc9725.html), [Cloudflare Stream browser WHIP](https://developers.cloudflare.com/stream/examples/browser-based-webrtc/), [OBS WHIP](https://obsproject.com/kb/whip-streaming-guide).
+
+## Plataforma universal e aplicações separadas
+
+A LUMI é principalmente um **criador de bots universais**. O utilizador pode descrever qualquer objetivo em linguagem natural, escolher um exemplo editável ou criar instruções completamente novas. Os templates em `lib/bot-catalog.ts` cobrem organização, investigação, tarefas, automatizações entre serviços autorizados, vídeo/clip com IA, Discord, streaming, social, negócios e educação. As categorias são partilhadas entre interface, criação e planeamento IA.
+
+**Estrutura do produto:**
+- `/dashboard?tab=bots`: LUMI Builder e galeria de 13 modelos de bots.
+- `/dashboard?tab=apps`: catálogo de aplicações especializadas e opcionais.
+- `/dashboard/apps/content`: LUMI Creator Studio, espaço separado para guiões e projetos de conteúdo.
+- `/dashboard/apps/stream`: LUMI Stream Studio, programa especializado com cenas, gravação e WHIP.
+- A navegação antiga `/dashboard?tab=studio` e `/dashboard?tab=stream` redireciona para as novas páginas para preservar bookmarks.
+
+**O que está funcional agora:** login, criar/guardar/eliminar rascunhos de bots (máx. 3 na versão gratuita), modelos e planos de IA quando `OPENAI_API_KEY` está configurada; ferramentas beta do Stream Studio; guiões com API configurada.
+
+**O que ainda NÃO está pronto:** execução autónoma de todos os bots; transferências reais entre Google Drive/Dropbox/outros serviços; edição/renderização completa de vídeos com IA; agendamento/publicação nas redes; alteração automática de cenas por bot; execução de bots Discord. Para isso são necessárias APIs oficiais, OAuth, motores de processamento, filas de tarefas, isolamento de permissões e custos por utilização.
+
+Não executar transferências nem atuar sobre serviços de terceiros sem o consentimento e as permissões adequadas.
