@@ -23,7 +23,7 @@ export function messagingReady(channel:AlertChannel){
  if(channel==="inapp")return true;
  if(channel==="sms")return textBeeReady()||Boolean(process.env.TWILIO_ACCOUNT_SID&&process.env.TWILIO_AUTH_TOKEN&&process.env.TWILIO_FROM_NUMBER);
  // No automatic WhatsApp delivery in free mode. Meta charges for proactive templates.
- if(channel==="whatsapp")return Boolean(process.env.TWILIO_ACCOUNT_SID&&process.env.TWILIO_AUTH_TOKEN&&process.env.TWILIO_WHATSAPP_FROM&&process.env.TWILIO_WHATSAPP_CONTENT_SID);
+ if(channel==="whatsapp")return process.env.ENABLE_PAID_WHATSAPP==="true"&&Boolean(process.env.TWILIO_ACCOUNT_SID&&process.env.TWILIO_AUTH_TOKEN&&process.env.TWILIO_WHATSAPP_FROM&&process.env.TWILIO_WHATSAPP_CONTENT_SID);
  return false;
 }
 export function freeSmsVerifyReady(){return textBeeReady()&&Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);}
