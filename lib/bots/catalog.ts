@@ -4,13 +4,13 @@
  * Keep IDs in sync with /api/bots and the AI planning schema.
  */
 export const BOT_CATEGORIES=[
- "universal","automation","transfer","planner","research","video_ai","stream_ai",
+ "universal","automation","transfer","planner","research","video_ai","cinematic","stream_ai",
  "stream","discord","content","social","shopping","investment","coding"
 ] as const;
 export type BotCategory=(typeof BOT_CATEGORIES)[number];
 export const BOT_CATEGORY_LABELS:Record<BotCategory,string>={
  universal:"Bot universal",automation:"Automatizações",transfer:"Transferir entre apps",
- planner:"Organização",research:"Pesquisa",video_ai:"Vídeo com IA",
+ planner:"Organização",research:"Pesquisa",video_ai:"Vídeo com IA",cinematic:"Transições cinematográficas",
  stream_ai:"Streams com IA",stream:"Streaming",discord:"Discord",
  content:"Conteúdo e clips",social:"Redes sociais",shopping:"Compras",
  investment:"Notícias financeiras",coding:"Programação"
@@ -28,6 +28,10 @@ export const BOT_TEMPLATES:BotTemplate[]=[
  description:"Ideias, guiões, storyboard, voz e plano de edição de vídeos originais.",
  prompt:"Cria um bot que prepara ideias, guiões, storyboard, indicações de voz, legendas e um plano de montagem de vídeos originais. A geração e renderização do vídeo devem exigir um fornecedor autorizado e revisão antes de publicar.",
  services:["Gerador de vídeo","Voz/legendas","YouTube"]},
+ {id:"cinematic",category:"cinematic",title:"Diretor de câmaras cinematográficas",icon:"🎥",group:"criar",
+ description:"Pede transições estilo drone, órbita, whip ou zoom com uma ou duas câmaras.",
+ prompt:"Cria um bot diretor de câmaras que, com vídeo de uma ou duas câmaras autorizadas, prepare transições cinematográficas ao meu pedido. Quero estilos tipo drone digital, movimento orbital, whip pan, zoom e dissolvência, com controlo da duração, pré-visualização e exportação. Deve distinguir movimentos simulados digitalmente de vídeo 3D gerado por IA.",
+ services:["Câmaras","LUMI Camera Lab","Vídeo"]},
  {id:"lives",category:"stream_ai",title:"Produtor de lives com IA",icon:"📡",group:"criar",
  description:"Planeia lives, cenas, títulos, alertas e momentos de interação.",
  prompt:"Cria um produtor de streams com IA que prepara o guião da live, uma sequência de cenas, pausas, títulos, alertas, highlights e sugestões de interações. Não inicia nem publica uma transmissão sem autorização explícita.",
