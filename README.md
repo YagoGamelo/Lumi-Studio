@@ -180,3 +180,57 @@ Em cada horário guardado, usa o botão **Alarme .ics** para importar um evento 
 - Não enviar mensagens para terceiros sem autorização. Opt-in e confirmação de número são obrigatórios.
 
 Referências: https://www.twilio.com/docs/verify/api ; https://www.twilio.com/docs/whatsapp/tutorial/send-whatsapp-notification-messages-templates ; https://vercel.com/docs/cron-jobs/usage-and-pricing
+
+## LUMI Atendimento — bots universais para lojas, mensagens e chamadas
+
+Novo separador no painel: `/dashboard?tab=support`. O criador LUMI continua a permitir bots de qualquer tipo. Os modelos «Atendimento para lojas com IA» e «Assistente de chamadas para negócios» são exemplos editáveis de bots universais.
+
+### Funcionalidades nesta primeira versão
+
+- Configurar loja, informações oficiais (horários, produtos, regras, envios etc.), mensagem de boas-vindas e bot personalizado da conta.
+- Ativar link público em `/atendimento/SEU-TOKEN` e incluir no website através de iframe. Clientes escrevem; a IA prepara uma resposta a partir da informação fornecida, com passagem para atendimento humano em caso de dúvida.
+- Isolamento entre clientes: cada conversa tem chave privada própria guardada apenas na sessão do navegador. Proprietário vê histórico no painel, responde manualmente e pode fechar ou eliminar a conversa.
+- Registar manualmente chamadas e notas de atendimento; a tabela guarda apenas últimos quatro dígitos do número e não grava áudio. O registo de chamadas Twilio pode ser preenchido por webhooks após integração.
+- Os webhooks Twilio opcionais permitem responder a mensagens SMS/WhatsApp recebidas, e atender chamadas com anúncio de uso de IA e consentimento antes da transcrição da fala. **Não** grava o áudio. A transcrição de um pedido só é guardada após consentimento da pessoa.
+
+### 1. Ativar Supabase
+
+Executar **uma vez** `supabase/support.sql` no SQL Editor do Supabase. É uma migração adicional: NÃO repetir `supabase/schema.sql`.
+
+### 2. Chaves privadas na Vercel
+
+Na Vercel > lumi-studio > Settings > Environment Variables, definir em Production:
+
+- `SUPABASE_SERVICE_ROLE_KEY` — obter nas chaves secretas do Supabase; NUNCA partilhar, publicar, colocar em NEXT_PUBLIC_ ou guardar no GitHub.
+- `OPENAI_API_KEY` (opcional mas necessária para as respostas inteligentes. Sem ela, o chat devolve uma mensagem de espera e encaminha para uma pessoa). Pode também usar `OPENAI_MODEL` para selecionar um modelo compatível.
+
+Voltar a publicar na Vercel depois de atualizar as variáveis. A atualização do GitHub, por si só, não ativa as tabelas nem os serviços.
+
+### 3. Ligar telefone e WhatsApp/SMS (opcional, piloto de uma loja)
+
+A ligação dos webhooks Twilio é **opcional e não está ativa só por instalar a LUMI**. Para um piloto, configurar um número próprio e os seguintes segredos privados na Vercel:
+
+- `TWILIO_AUTH_TOKEN` — token secreto da conta Twilio.
+- `TWILIO_SUPPORT_BASE_URL` — URL público EXATO usado para validar assinaturas, por exemplo `https://lumi-studio-two.vercel.app` (sem barra final).
+- `TWILIO_SUPPORT_OWNER_ID` — identificador de utilizador Supabase ao qual pertence a loja piloto; atribuir no servidor, nunca aceitar de pedidos públicos.
+- `TWILIO_SUPPORT_MESSAGING_TO` — número/canal de destino da conta Twilio, no formato `+...` para SMS ou `whatsapp:+...` para WhatsApp, exatamente como aparece nos webhooks.
+- `TWILIO_SUPPORT_VOICE_TO` — número Twilio de destino das chamadas, em formato internacional.
+
+Configurar na consola Twilio:
+
+- **Incoming Messages**: POST `https://TEU-DOMINIO/api/support/twilio/message`.
+- **A Call Comes In**: POST `https://TEU-DOMINIO/api/support/twilio/voice`.
+- **Call Status Callback**: POST `https://TEU-DOMINIO/api/support/twilio/call-status`.
+
+Os webhooks verificam a assinatura X-Twilio-Signature, restringem destinatário e perfil autorizados, e recusam pedidos não autenticados. Esta primeira configuração é para um único proprietário/número por implantação; para múltiplas lojas com números independentes é necessária gestão de vários números, aquisição e associação segura de contas Twilio.
+
+**Importante:** WhatsApp e SMS só recebem e respondem a pedidos iniciados pelo cliente num canal configurado. Não há envio de campanhas nem mensagens não solicitadas. A operação WhatsApp exige cumprir as regras da Meta/Twilio. A transcrição de fala pode exigir avisos e consentimento específicos segundo o país; a implementação pede confirmação antes de usar reconhecimento vocal, mas é necessário validar o fluxo juridicamente antes de uso comercial. Chamadas de emergência não são suportadas.
+
+### Limitações e privacidade
+
+- Não afirma conhecer preços, stocks nem políticas que a loja não inseriu. Se a IA não souber, sinaliza para atendimento humano.
+- O sistema não instala bots automaticamente no WhatsApp, Instagram, redes telefónicas ou caixas de mensagens alheias; cada serviço requer uma API, permissões e contrato.
+- Mensagens e resumos de chamadas ficam guardados na base de dados e só são visíveis ao proprietário. O utilizador pode eliminar registos no painel. É necessária política de retenção, privacidade e eventual DPA antes de uso com clientes reais.
+- Há limites básicos de pedidos e mensagens para controlar custos na beta. Para produção são necessárias proteções antiabuso/rate limit persistentes e testes de carga.
+
+Documentação: https://www.twilio.com/docs/usage/webhooks/webhooks-security ; https://www.twilio.com/docs/messaging/twiml ; https://www.twilio.com/docs/voice/twiml/gather
