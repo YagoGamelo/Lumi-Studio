@@ -140,3 +140,31 @@ No **LUMI Builder**, escolhe «Diretor Cinematográfico IA» na galeria. O model
 - As imagens das câmaras/vídeos ficam no browser e não são enviadas à IA. Apenas o pedido textual pode ser analisado pelo fornecedor IA, se configurado.
 
 **Limitação essencial:** estes efeitos são transforms e misturas 2D de imagens existentes. Um "drone virtual" não é uma filmagem aérea real e não inventa uma nova perspetiva física. Geração volumétrica 3D ou novos ângulos realistas exigem um modelo de vídeo/depth adicional e são trabalho futuro. O bot é configurável e a demonstração funciona de forma limitada, mas não existe execução autónoma nem controlo remoto de dispositivos/câmaras.
+
+## Bots universais exportáveis — primeira versão
+
+O LUMI Builder aceita instruções livres, mesmo quando misturam várias finalidades (quero X e Y). As categorias e modelos são sugestões de organização, não uma lista fechada.
+
+### Experimentar na LUMI
+
+Entra em /dashboard?tab=bots, escreve uma instrução própria, guarda o bot e abre o respetivo cartão. Em Falar com este bot → Testar com IA, escreve uma mensagem. O teste exige a variável privada OPENAI_API_KEY na Vercel (opcional OPENAI_MODEL); devolve apenas texto e não simula ações externas realizadas.
+
+Na beta, o limite técnico de armazenamento foi aumentado para 100 projetos por conta para proteger contra abuso. Isto não limita os tipos de bot. As execuções por IA têm custos do fornecedor.
+
+### Exportar / instalar em aplicações externas
+
+Cada cartão dispõe de Exportar ou instalar noutra aplicação, com ZIP autenticado, sem credenciais privadas:
+- Automação HTTP / Make / n8n: pacote Node.js 22+ com servidor HTTP em /api/message, resposta JSON e autenticação BOT_ACCESS_TOKEN. Qualquer app que consiga enviar pedidos HTTP pode ligar-se a este servidor.
+- Discord: servidor Discord Interactions com verificação Ed25519, resposta diferida e comando /perguntar. Exige criar aplicação no Discord Developer Portal, preencher DISCORD_APPLICATION_ID, DISCORD_PUBLIC_KEY, DISCORD_BOT_TOKEN, DISCORD_GUILD_ID, OPENAI_API_KEY, alojar com HTTPS público e executar npm run register.
+- Website: widget de chat por iframe, alojado num servidor Node.js. Exige OPENAI_API_KEY e domínio HTTPS. Esta opção é pública e tem apenas rate limiting básico em memória; aplicar proteção antiabuso e controlo de custos antes de a publicar.
+
+As instruções ficam no bot.json. O lumi-manifest.json descreve capacidades. Nunca são incluídas chaves no ZIP ou no browser. Para executar fora da LUMI, é preciso configurar as credenciais no servidor de destino.
+
+**Âmbito real:** os programas exportados geram respostas de texto via API de IA. Vídeos com IA, transições 3D, controlo OBS, transferências entre contas e moderação Discord avançada ainda precisam de módulos autorizados. Nenhuma plataforma permite instalação universal sem respeitar APIs, permissões e autenticação.
+
+### Segurança
+
+- O código exportado segue templates fixos. A instrução do utilizador é guardada como dados JSON, nunca como código executável.
+- Não colocar .env, tokens Discord, chaves OAuth nem OPENAI_API_KEY no GitHub ou em variáveis NEXT_PUBLIC_.
+- Node.js 22+ e servidor HTTPS público são necessários para integração remota, especialmente Discord.
+- Ativar monitorização e limites de utilização para bots públicos e serviços pagos.
