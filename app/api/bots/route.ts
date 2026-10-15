@@ -4,7 +4,7 @@ import { z } from "zod";
 const schema=z.object({
   title:z.string().trim().min(3).max(75),
   instruction:z.string().trim().min(12).max(2500),
-  category:z.enum(["universal","content","planner","research","investment"]),
+  category:z.enum(["universal","content","stream","discord","planner","research","investment"]),
   frequency:z.enum(["manual","daily","weekly"]),
 });
 export async function GET(){
