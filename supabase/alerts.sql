@@ -50,13 +50,13 @@ grant insert (user_id,bot_id,channel,time_local,timezone,recurrence,weekday,mess
 grant update (enabled) on public.bot_alert_schedules to authenticated;
 
 create or replace function public.check_bot_alert_owner() returns trigger
-language plpgsql security definer set search_path=public as $
+language plpgsql security definer set search_path=public as $$
 begin
  if not exists(select 1 from public.bots where id=new.bot_id and user_id=new.user_id) then
   raise exception 'Bot não pertence à conta';
  end if;
  return new;
-end $;
+end $$;
 drop trigger if exists bot_alert_owner_trigger on public.bot_alert_schedules;
 create trigger bot_alert_owner_trigger before insert or update of bot_id,user_id on public.bot_alert_schedules
  for each row execute function public.check_bot_alert_owner();
