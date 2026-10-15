@@ -5,10 +5,10 @@ type Bot={id:string;title:string;instruction:string;category:string;frequency:st
 type Channel="inapp"|"sms"|"whatsapp";
 type Schedule={id:string;bot_id:string;channel:Channel;time_local:string;timezone:string;recurrence:"daily"|"weekdays"|"weekly";weekday:number|null;message:string;enabled:boolean;next_run_at:string;last_error?:string|null};
 type Inbox={id:string;bot_title:string;content:string;channel:string;delivered_at:string;provider_status:string};
-type Config={schedules:Schedule[];inbox:Inbox[];phone:{masked:string;verified:boolean};channels:{inapp:boolean;sms:boolean;whatsapp:boolean}};
+type Config={schedules:Schedule[];inbox:Inbox[];phone:{masked:string;verified:boolean};channels:{inapp:boolean;sms:boolean;whatsapp:boolean};whatsapp_mode?:"manual"|"paid"};
 const defaultConfig:Config={schedules:[],inbox:[],phone:{masked:"",verified:false},channels:{inapp:true,sms:false,whatsapp:false}};
 const days=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
-const channels:Record<Channel,string>={inapp:"Caixa de entrada / Alarme",sms:"SMS para o telemóvel",whatsapp:"WhatsApp"};
+const channels:Record<Channel,string>={inapp:"Caixa de entrada / Alarme",sms:"SMS para o telemóvel",whatsapp:"WhatsApp — preparar grátis"};
 const defaultZone=()=>{
  if(typeof Intl!=="undefined")return Intl.DateTimeFormat().resolvedOptions().timeZone||"Europe/Lisbon";
  return "Europe/Lisbon";
@@ -70,10 +70,10 @@ export default function BotAlerts({bots}:{bots:Bot[]}){
       {recurrence==="weekly"&&<div className="form-field"><label>Dia da semana</label><select value={weekday} onChange={e=>setWeekday(Number(e.target.value))}>{days.map((d,i)=><option key={d} value={i}>{d}</option>)}</select></div>}
       <div className="form-field"><label>Fuso horário</label><select value={timezone} onChange={e=>setTimezone(e.target.value)}>{Array.from(new Set([timezone,"Europe/Lisbon","Europe/London","Europe/Madrid","America/Sao_Paulo","America/New_York","UTC"])).map(x=><option key={x} value={x}>{x}</option>)}</select></div>
       <div className="form-field"><label>Onde receber?</label><select value={channel} onChange={e=>setChannel(e.target.value as Channel)}>{(Object.keys(channels) as Channel[]).map(c=><option key={c} value={c}>{channels[c]}</option>)}</select></div>
-      {channel!=="inapp"&&<div className="alert-channel-note"><Phone size={16}/><p>{data.phone.verified?"Número verificado: "+data.phone.masked:"É necessário verificar o teu número antes de receber mensagens."} {!data.channels[channel]?"O canal escolhido ainda não está ativo no servidor LUMI.":""}</p></div>}
+      {channel!=="inapp"&&<div className="alert-channel-note"><Phone size={16}/><p>{data.phone.verified?"Número verificado: "+data.phone.masked:"É necessário verificar o teu número por SMS antes de usares este canal."} {channel==="whatsapp"&&data.whatsapp_mode!=="paid"?"Grátis: o resumo será guardado na LUMI; abre-o no WhatsApp e confirma o envio manualmente. Não é enviado automaticamente à hora marcada.":!data.channels[channel]?"O envio ainda não está configurado. Para SMS grátis, liga um Android ao TextBee.":""}</p></div>}
       {channel==="whatsapp"&&<label className="alert-consent"><input type="checkbox" checked={whatsappConsent} onChange={e=>setWhatsappConsent(e.target.checked)}/> Autorizo expressamente a LUMI a enviar alertas informativos do bot ao meu WhatsApp, e sei que posso cancelar quando quiser.</label>}
       <button className="btn full" disabled={busy||loading||!message.trim()||(channel!=="inapp"&&(!data.phone.verified||!data.channels[channel]))} onClick={create}><CalendarDays size={16}/> Guardar alerta</button>
-      <p className="muted-info alert-fineprint">O envio automático requer um processador de agendamentos ativo. A caixa de entrada não dispara notificações com a página fechada. Para um alarme no telemóvel, importa o ficheiro de calendário de um alerta guardado.</p>
+      <p className="muted-info alert-fineprint">O envio automático de SMS requer o Android com TextBee e um agendador externo ativo. A caixa de entrada não dispara notificações com a página fechada. No WhatsApp gratuito precisas de confirmar manualmente cada envio. Para um alarme no telemóvel, importa o ficheiro de calendário.</p>
      </>}
     </section>
     <section className="section-panel alert-panel"><div className="panel-heading"><div><h2><Phone size={19}/> O teu telemóvel</h2><p>Para SMS e WhatsApp: apenas números confirmados.</p></div></div>
@@ -83,7 +83,7 @@ export default function BotAlerts({bots}:{bots:Bot[]}){
       <button className="stream-control" disabled={busy||!phoneConsent} onClick={verifyStart}><Send size={15}/> Pedir código por SMS</button>
       <div className="alert-settings"><div className="form-field"><label>Código recebido</label><input inputMode="numeric" value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,"").slice(0,10))} placeholder="123456"/></div><button className="stream-control alert-confirm" disabled={busy||code.length<4} onClick={verifyCheck}><ShieldCheck size={15}/> Verificar</button></div>
      </>}
-     <p className="muted-info">O SMS pode ter custos. Para notificações WhatsApp programadas, a conta empresarial precisa de modelos de mensagem aprovados. Nenhum envio será realizado sem a infraestrutura configurada.</p>
+     <p className="muted-info">Para SMS, podes usar o plano gratuito do TextBee com um telemóvel Android e SIM; o teu operador pode cobrar os SMS do tarifário. Para WhatsApp, a opção gratuita prepara uma mensagem que envias tu próprio. Nunca ativaremos envios pagos sem autorização.</p><p className="muted-info"><a href="https://textbee.dev/" target="_blank" rel="noopener noreferrer">Configurar TextBee gratuito ↗</a></p>
     </section>
    </div>
    <div>
@@ -95,7 +95,7 @@ export default function BotAlerts({bots}:{bots:Bot[]}){
       <div className="alert-actions"><a href={"/api/alerts/calendar?id="+encodeURIComponent(s.id)} title="Importar na agenda do telemóvel"><Download size={14}/> Alarme .ics</a><button disabled={busy} onClick={()=>void perform("/api/alerts/"+s.id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!s.enabled})},s.enabled?"Alerta pausado.":"Alerta reativado.")}>{s.enabled?"Pausar":"Reativar"}</button><button disabled={busy} onClick={()=>{if(confirm("Eliminar este alerta?"))void perform("/api/alerts/"+s.id,{method:"DELETE"},"Alerta eliminado.");}}><Trash2 size={14}/> Eliminar</button></div></div>)}
     </section>
     <section className="section-panel alert-panel"><div className="panel-heading"><div><h2><Bell size={19}/> Caixa de informações</h2><p>Alertas e resumos que já chegaram à LUMI.</p></div></div>
-     {data.inbox.length===0?<p className="muted-info">Ainda não há informações recebidas. Aparecem aqui depois da primeira execução agendada.</p>:data.inbox.map(n=><article className="alert-inbox-item" key={n.id}><div><strong>{n.bot_title}</strong><small>{formatted(n.delivered_at,timezone)} · {channels[n.channel as Channel]||n.channel}</small></div><p>{n.content}</p>{n.provider_status==="failed"&&<small>Não foi possível enviar para o canal externo; a mensagem ficou disponível aqui.</small>}</article>)}
+     {data.inbox.length===0?<p className="muted-info">Ainda não há informações recebidas. Aparecem aqui depois da primeira execução agendada.</p>:data.inbox.map(n=><article className="alert-inbox-item" key={n.id}><div><strong>{n.bot_title}</strong><small>{formatted(n.delivered_at,timezone)} · {channels[n.channel as Channel]||n.channel}</small></div><p>{n.content}</p>{n.provider_status==="failed"&&<small>Não foi possível enviar para o canal externo; a mensagem ficou disponível aqui.</small>}{n.channel==="whatsapp"&&n.provider_status==="manual_ready"&&<a className="stream-control" href={"/api/alerts/whatsapp/share?id="+encodeURIComponent(n.id)} target="_blank" rel="noopener noreferrer" style={{marginTop:9}}>Abrir e enviar pelo WhatsApp ↗</a>}</article>)}
     </section>
    </div>
   </div>
