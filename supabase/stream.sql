@@ -13,6 +13,7 @@ create table if not exists public.stream_profiles (
  updated_at timestamptz not null default now()
 );
 alter table public.stream_profiles enable row level security;
+grant select,insert,update,delete on public.stream_profiles to authenticated;
 drop policy if exists stream_profiles_owner on public.stream_profiles;
 create policy stream_profiles_owner on public.stream_profiles
  for all to authenticated using(user_id=auth.uid()) with check(user_id=auth.uid());
