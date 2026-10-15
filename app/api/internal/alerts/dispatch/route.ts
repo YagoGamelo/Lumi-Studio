@@ -46,20 +46,21 @@ export async function POST(req:Request){
    const {data:bot}=await db.from("bots").select("title,instruction").eq("id",s.bot_id).eq("user_id",s.user_id).maybeSingle();
    if(!bot){failed++;await release("Bot eliminado ou indisponível");continue;}
    const content=await information(bot.title,bot.instruction||"",s.message);
-   // Idempotency: claim this exact occurrence in the inbox *before* sending to a paid provider.
+   const manualWhatsApp=s.channel==="whatsapp"&&!messagingReady("whatsapp");
+   // Idempotency: claim this exact occurrence in the inbox *before* contacting any provider.
    // A crashed worker will not send the same occurrence again on retry.
    const {error:inboxError}=await db.from("bot_alert_inbox").insert({
     user_id:s.user_id,schedule_id:s.id,delivery_key:deliveryKey,
-    bot_title:bot.title,content,channel:s.channel,provider_status:s.channel==="inapp"?"inapp":"pending"
+    bot_title:bot.title,content,channel:s.channel,provider_status:manualWhatsApp?"manual_ready":s.channel==="inapp"?"inapp":"pending"
    });
    if(inboxError){await release("Entrega já processada ou erro ao escrever na caixa de entrada");continue;}
-   if(s.channel!=="inapp"){
+   if(s.channel!=="inapp"&&!manualWhatsApp){
     if(!messagingReady(s.channel))throw new Error("Fornecedor SMS/WhatsApp não configurado.");
     const {data:phone}=await db.from("bot_alert_phones").select("phone_e164,verified_at").eq("user_id",s.user_id).maybeSingle();
     if(!phone?.verified_at||!phone.phone_e164)throw new Error("Número não verificado. Desativa ou verifica novamente.");
     await sendAlert(s.channel,phone.phone_e164,content,bot.title);
    }
-   await db.from("bot_alert_inbox").update({provider_status:s.channel==="inapp"?"inapp":"submitted"}).eq("delivery_key",deliveryKey);
+   await db.from("bot_alert_inbox").update({provider_status:manualWhatsApp?"manual_ready":s.channel==="inapp"?"inapp":"submitted"}).eq("delivery_key",deliveryKey);
    processed++;await release(null);
   }catch(err){
    const reason=err instanceof Error?err.message.slice(0,120):"Falha no envio";
