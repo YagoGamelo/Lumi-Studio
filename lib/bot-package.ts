@@ -61,6 +61,11 @@ function rateOk(ip){
 const app=createServer(async(req,res)=>{
  const path=new URL(req.url||"/","http://localhost").pathname;
  if(req.method==="GET"&&path==="/health"){json(res,200,{ok:true});return;}
+ if(req.method==="GET"&&path==="/widget.js"){
+  if(!allowPublicWidget){json(res,403,{error:"Widget público desativado"});return;}
+  res.writeHead(200,{"Content-Type":"text/javascript; charset=utf-8","X-Content-Type-Options":"nosniff"});
+  res.end(readFileSync(new URL("./widget.js",import.meta.url),"utf8"));return;
+ }
  if(req.method==="GET"&&(path==="/"||path==="/widget")){
   if(!allowPublicWidget){json(res,403,{error:"Widget público desativado"});return;}
   res.writeHead(200,{"Content-Type":"text/html; charset=utf-8","Content-Security-Policy":"default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors *","X-Content-Type-Options":"nosniff"});
