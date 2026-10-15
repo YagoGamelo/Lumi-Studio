@@ -86,3 +86,27 @@ Referências:
 - https://discord.com/developers/docs/topics/oauth2
 - https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia
 - https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder
+
+
+## LUMI GO LIVE — emissão direta a partir do navegador (beta)
+
+O painel **Stream Studio** inclui agora o módulo **Emitir em direto**, que compõe as cenas do editor num canvas 1280×720 (30 fps) e envia vídeo e áudio por **WebRTC/WHIP**, sem OBS nem Streamlabs. Usa Chrome/Edge num computador para o primeiro teste. Em dispositivos móveis, a captura de ecrã pode não ser suportada, mas a câmara/microfone podem funcionar conforme navegador e permissões.
+
+### Fazer uma live real
+
+1. Entra em /dashboard?tab=stream e escolhe a cena **Em direto** ou **IRL**.
+2. Liga a câmara e/ou a captura de ecrã, e o microfone. Confirma a pré-visualização.
+3. Cria uma entrada **WebRTC/WHIP** num fornecedor compatível (por exemplo, [Cloudflare Stream WebRTC](https://developers.cloudflare.com/stream/examples/browser-based-webrtc/)). Consulta os preços/condições do fornecedor. Algumas entradas necessitam de uma chave privada na URL; outras fornecem um Bearer Token.
+4. Introduz o **URL de publicação WHIP (https://)** no campo privado do módulo. Se necessário, coloca o Bearer Token no segundo campo. O app **não guarda nem transmite estas credenciais aos servidores LUMI**: o navegador contacta diretamente o servidor WHIP.
+5. Carrega em **Entrar em direto**. O botão muda para **Terminar transmissão** quando houver sessão. Verifica o indicador **NO AR**, velocidade de envio e o painel do teu fornecedor. O envio para a entrada não significa, por si só, que a live esteja pública numa rede social.
+6. O vídeo e o áudio enviados continuam a refletir as mudanças de cena e os avisos do estúdio. Para terminar, carrega **Terminar transmissão**: a app pede DELETE da sessão WHIP e fecha o WebRTC.
+
+**Múltiplos destinos:** serviços como Cloudflare Stream podem configurar **simulcast/outputs** para Twitch, YouTube e outras plataformas. Essa configuração é realizada no fornecedor; a LUMI ainda não gere destinos RTMP nem chaves das redes sociais. Ver https://developers.cloudflare.com/stream/stream-live/simulcasting/.
+
+**PC → IRL:** é possível abrir a LUMI num telemóvel com conta autenticada, ativar a câmara e iniciar uma sessão WHIP. **Não é ainda um handoff automático sem corte**: isso exige um serviço de ingestão central com controlo da fonte ativa, relay ininterrupto, reconexão e failover. Dois dispositivos não devem publicar simultaneamente para a mesma entrada WHIP sem suporte explícito do fornecedor.
+
+**Segurança:** não coloques URLs WHIP secretos, stream keys, credenciais, Bot Tokens ou Bearer Tokens no GitHub, imagens públicas, chats ou ficheiros de overlay. O URL WHIP e o Bearer Token são mantidos em memória apenas enquanto a página estiver aberta. Nunca colocar estes valores em variáveis NEXT_PUBLIC_.
+
+**Limitações:** a qualidade depende do navegador, hardware e rede; não há garantia de estabilidade para 24/7, transmissão multiplataforma sem serviço, gravação na nuvem, reconexão automática com failover, plugins nativos OBS ou captura direta de jogos protegidos. Fazer testes privados antes de emitir publicamente.
+
+Referências técnicas: [RFC 9725 WHIP](https://www.rfc-editor.org/rfc/rfc9725.html), [Cloudflare Stream browser WHIP](https://developers.cloudflare.com/stream/examples/browser-based-webrtc/), [OBS WHIP](https://obsproject.com/kb/whip-streaming-guide).

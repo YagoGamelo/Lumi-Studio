@@ -2,6 +2,7 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import {ArrowRight, Bot, Camera, Check, Clapperboard, Copy, Download, ExternalLink, Link2, Mic, Monitor, Plus, Radio, Save, ShieldCheck, Smartphone, Square, Trash2, Video, VideoOff, WandSparkles} from "lucide-react";
 import {browserDb} from "@/lib/supabase/browser";
+import LiveBroadcast from "./live-broadcast";
 
 type BotDraft={id:string;title:string;instruction:string;category:string;frequency:string;status:string};
 type SceneMode="starting"|"live"|"brb"|"irl"|"ending"|"custom";
@@ -173,7 +174,7 @@ export default function StreamStudio({bots,username}:{bots:BotDraft[],username:s
  }
  const invite=/^\d{17,22}$/.test(clientId.trim())?"https://discord.com/oauth2/authorize?client_id="+encodeURIComponent(clientId.trim())+"&scope=bot%20applications.commands&permissions=3072":"";
  return <div className="stream-studio">
-  <div className="heading-row"><div><div className="section-kicker"><Radio size={15}/> LUMI STREAM STUDIO · BETA</div><h1>O controlo da tua stream.</h1><p>Cenas, captura, gravação e overlays para OBS, Streamlabs e Discord.</p></div><span className="pill">Beta funcional · sem RTMP</span></div>
+  <div className="heading-row"><div><div className="section-kicker"><Radio size={15}/> LUMI STREAM STUDIO · BETA</div><h1>O teu programa de streaming.</h1><p>Cenas, vídeo, áudio, bots e transmissão WebRTC diretamente no site — sem abrir o OBS.</p></div><span className="pill">Emissão WebRTC/WHIP beta</span></div>
   <div className="stream-layout">
    <section className="stream-main">
     <div className="stream-preview-top"><span><span className={"stream-dot"+(recording?" recording":"")}/>{recording?"A GRAVAR":"PRÉ-VISUALIZAÇÃO"}</span><span>1280 × 720 · 16:9</span></div>
@@ -186,6 +187,7 @@ export default function StreamStudio({bots,username}:{bots:BotDraft[],username:s
      <button className={recording?"stream-control stop":"stream-control primary"} onClick={recording?stopRecord:startRecord}>{recording?<Square size={16}/>:<Video size={16}/>} {recording?"Parar gravação":"Gravar vídeo"}</button>
     </div>
     <p className="muted-info" role="status">{status}</p>
+    <LiveBroadcast canvasRef={canvas} microphoneRef={micStream} screenRef={screenStream} microphoneEnabled={micOn} screenEnabled={screenOn} onNotice={setStatus}/>
     <section className="section-panel stream-section"><div className="panel-heading"><div><h2><Clapperboard size={19}/> Cenas</h2><p>Muda a cena durante a gravação. O modo IRL prepara um layout próprio.</p></div><button className="tiny-btn" onClick={addScene}><Plus size={14}/> Nova cena</button></div>
      <div className="stream-scene-list">{settings.scenes.map(s=><div key={s.id} className={settings.activeId===s.id?"stream-scene selected":"stream-scene"}><button onClick={()=>chooseScene(s.id)}><span className="scene-thumbnail"><Monitor size={17}/></span><span><strong>{s.name}</strong><small>{settings.activeId===s.id?"Cena ativa":s.mode==="irl"?"Cena para telemóvel":"Mudar para esta cena"}</small></span></button>{s.mode==="custom"&&<button className="scene-remove" onClick={()=>removeScene(s.id)} aria-label={"Eliminar "+s.name}><Trash2 size={14}/></button>}</div>)}</div>
     </section>
@@ -211,7 +213,7 @@ export default function StreamStudio({bots,username}:{bots:BotDraft[],username:s
     </section>
     <section className="section-panel stream-section"><div className="panel-heading"><div><h2><Smartphone size={19}/> Trocar de PC para IRL</h2><p>Preparação da passagem para o telemóvel.</p></div></div>
      <button className="stream-control full" onClick={()=>chooseScene("irl")}><Smartphone size={17}/> Ativar cena IRL</button>
-     <p className="muted-info">A troca contínua do vídeo PC → telemóvel precisa de um servidor de ingestão/relay RTMP ou SRT e de uma aplicação móvel ligada à mesma transmissão. Esta versão prepara a cena, mas ainda não transfere uma live entre dispositivos.</p>
+     <p className="muted-info">Podes entrar na LUMI através do telemóvel, ligar a câmara/microfone e emitir para uma entrada WHIP com o novo botão Entrar em direto. A mudança ininterrupta PC → telemóvel exige um relay de vídeo com handoff; ainda não é automática.</p><button className="stream-control full" style={{marginTop:10}} onClick={()=>copy(window.location.origin+"/dashboard?tab=stream")}><Copy size={15}/> Copiar link para abrir no telemóvel</button>
     </section>
    </aside>
   </div>
