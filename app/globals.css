@@ -99,3 +99,37 @@
 .bot-export-links a:hover{background:#594080;border-color:#b39ef7}
 .bot-export p{font-size:11px;color:#a6abc4;line-height:1.7}
 @media(max-width:1100px){.bot-export-links{grid-template-columns:1fr}}
+
+
+/* LUMI bot information alerts, phone verification & calendar alarm */
+.alert-workspace{max-width:1440px;margin:0 auto}
+.alert-workspace .heading-row{align-items:center}
+.alert-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:19px;align-items:start}
+.alert-panel{margin-top:18px}
+.alert-panel .panel-heading h2{display:flex;align-items:center;gap:10px}
+.alert-panel .panel-heading svg{color:#bea5ff}
+.alert-panel textarea{min-height:90px;resize:vertical;line-height:1.65}
+.alert-settings{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.alert-channel-note{display:flex;align-items:flex-start;gap:10px;background:#2a243c;border:1px solid #6b5783;padding:14px;border-radius:10px;margin:10px 0 15px;color:#dbcdf5;font-size:12px;line-height:1.6}
+.alert-channel-note svg{flex:none;margin-top:1px}
+.alert-consent{display:flex;align-items:flex-start;gap:10px;font-size:12px;line-height:1.65;color:#d3c9e4;margin:15px 0;cursor:pointer}
+.alert-consent input{width:17px;height:17px;flex:none;accent-color:#a284fc;margin:2px 0 0}
+.alert-verified{display:flex;gap:10px;align-items:center;color:#a8efcf;font-size:12px;line-height:1.5;margin-bottom:13px}
+.alert-verified button{margin-left:auto;color:#e9b5ca;border:0;background:transparent;font-size:11px}
+.alert-confirm{align-self:center;margin-top:22px}
+.alert-fineprint{margin-top:13px}
+.alert-schedule{background:#1a2032;border:1px solid #343951;padding:16px;border-radius:12px;margin-top:12px}
+.alert-schedule-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.alert-schedule-top strong{font-size:14px;overflow-wrap:anywhere}
+.alert-schedule p{color:#bdc0d5;margin:9px 0;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.alert-schedule>small{display:flex;align-items:center;gap:6px;font-size:11px;color:#a59fbc;margin-top:5px;line-height:1.5;overflow-wrap:anywhere}
+.alert-schedule .alert-error{color:#f7bcc7;font-size:11px}
+.alert-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px;padding-top:12px;border-top:1px solid #333c52}
+.alert-actions button,.alert-actions a{display:inline-flex;align-items:center;gap:5px;border:1px solid #58517c;color:#d5c7fd;background:#2a2541;padding:9px 10px;font-size:11px;border-radius:7px;font-weight:700}
+.alert-actions button:hover,.alert-actions a:hover{background:#46365d}
+.alert-inbox-item{margin-top:12px;border:1px solid #383b52;background:#1a1f31;border-radius:12px;padding:16px}
+.alert-inbox-item>div{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.alert-inbox-item strong{font-size:13px}.alert-inbox-item small{font-size:10px;color:#b0abbd}
+.alert-inbox-item p{white-space:pre-wrap;font-size:12px;color:#ddd8eb;line-height:1.7;margin:9px 0;overflow-wrap:anywhere}
+@media(max-width:1250px){.alert-grid{grid-template-columns:1fr}}
+@media(max-width:550px){.alert-settings{grid-template-columns:1fr}.alert-workspace .heading-row h1{font-size:28px}}
