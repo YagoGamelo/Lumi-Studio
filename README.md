@@ -110,3 +110,20 @@ O painel **Stream Studio** inclui agora o módulo **Emitir em direto**, que comp
 **Limitações:** a qualidade depende do navegador, hardware e rede; não há garantia de estabilidade para 24/7, transmissão multiplataforma sem serviço, gravação na nuvem, reconexão automática com failover, plugins nativos OBS ou captura direta de jogos protegidos. Fazer testes privados antes de emitir publicamente.
 
 Referências técnicas: [RFC 9725 WHIP](https://www.rfc-editor.org/rfc/rfc9725.html), [Cloudflare Stream browser WHIP](https://developers.cloudflare.com/stream/examples/browser-based-webrtc/), [OBS WHIP](https://obsproject.com/kb/whip-streaming-guide).
+
+
+## LUMI = plataforma de bots universais (produto principal)
+
+A LUMI **não é um site centrado em streaming**. O produto central é o **LUMI Builder**, onde qualquer pessoa descreve uma ideia em linguagem natural, adapta a categoria, edita instruções e guarda um bot universal como rascunho.
+
+- **Criar bots universais:** /dashboard?tab=bots. Biblioteca filtrável de 14 modelos iniciais; é possível descrever livremente bots de outros temas. Limite beta: 10 rascunhos por conta.
+- **Conteúdo com IA:** exemplos de produtor de vídeos, clips, publicações, guiões, vozes, legendas e storyboard.
+- **Streams com IA:** exemplos para preparação de lives, cenas e alertas.
+- **Transferir ficheiros entre aplicações:** modelos que especificam origem, destino, regras, aprovações e permissões de cada conta.
+- **Organização e produtividade:** agenda, pesquisa, tarefas, compras e notícias.
+- **Discord, automações, social e programação:** outros tipos de bots personalizáveis.
+- **Ferramentas complementares independentes:** /dashboard?tab=studio para Creator Studio e /dashboard?tab=stream para Stream Studio. Os bots de streaming podem ser associados ao Stream Studio, mas ninguém precisa de o abrir para utilizar a plataforma universal.
+
+**Estado de desenvolvimento:** escolher um exemplo preenche o formulário do bot; guardar cria um rascunho na tabela existente public.bots. A IA de planificação depende de OPENAI_API_KEY no servidor. Um bot de vídeo com IA **não** gera ainda vídeo final; um bot de transferências **não** move ficheiros automaticamente entre sites; bots de Discord e redes sociais **não** têm execução ativa. Ações reais exigem conectores OAuth, motores de tarefas, fornecedores externos, permissões por utilizador, custos controlados, auditoria, confirmação para ações destrutivas e testes de segurança. Não pedir aos utilizadores que partilhem palavras-passe ou tokens no texto das instruções.
+
+**Estrutura de produto:** LUMI Builder = plataforma principal. Creator Studio e Stream Studio = programas opcionais dentro do mesmo site. A identidade, conta e lista de bots são comuns.
