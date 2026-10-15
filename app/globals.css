@@ -36,3 +36,53 @@
 .broadcast-button{min-height:46px;flex:1}.broadcast-note,.broadcast-mobile{display:flex;align-items:flex-start;gap:12px;background:#20203c;border:1px solid #433f61;padding:15px;border-radius:12px;margin-top:17px;color:#c4bddc;font-size:12px;line-height:1.75}.broadcast-note svg,.broadcast-mobile svg{color:#bca3ff;flex:none;margin-top:2px}.broadcast-note strong,.broadcast-mobile strong{color:#f7f2ff}.broadcast-mobile{background:#181f35;border-color:#333d58}
 .broadcast-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.broadcast-links a{display:inline-flex;gap:6px;align-items:center;color:#cfbfff;font-size:11px;font-weight:700;padding:8px 0}.broadcast-station>p.muted-info{margin-top:14px}
 @media(max-width:530px){.broadcast-topline{grid-template-columns:1fr 1fr}.broadcast-topline>div:first-child{grid-column:1/-1}.broadcast-topline strong{font-size:16px}.broadcast-links{flex-direction:column;gap:0}}
+
+
+/* Universal bot platform, standalone optional creator applications */
+.feature-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.bot-catalog-section{margin-bottom:20px}.bot-catalog-filters{display:grid;grid-template-columns:minmax(0,2fr) minmax(190px,1fr);gap:12px;margin-bottom:16px}.bot-catalog-filters .form-field{margin:0}
+.bot-template-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.bot-template-card{background:linear-gradient(155deg,#1b2033,#131826);border:1px solid #323950;border-radius:14px;color:#faf9ff;text-align:left;display:flex;flex-direction:column;gap:9px;padding:17px;min-height:175px;transition:border-color .2s,transform .2s}
+.bot-template-card:hover,.bot-template-card:focus-visible{border-color:#ae90ff;transform:translateY(-2px)}
+.bot-template-emoji{width:35px;height:35px;display:grid;place-items:center;background:#6248a72f;border-radius:11px;font-size:19px}
+.bot-template-card strong{font-size:13px;line-height:1.3}.bot-template-card small{font-size:11px;color:#a6adc3;line-height:1.5;flex:1}
+.bot-template-label{color:#c1aaff;font-size:10px;font-weight:800;display:flex;gap:6px;align-items:center}
+.lumi-app-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}
+.lumi-app-card{background:linear-gradient(150deg,#272041,#151a2a 72%);border:1px solid #49416d;border-radius:17px;padding:28px;min-height:240px;color:#f6f1ff;display:flex;flex-direction:column;align-items:flex-start;transition:border-color .2s,transform .2s;gap:11px}
+.lumi-app-card:hover{border-color:#9d82f8;transform:translateY(-3px)}
+.lumi-app-icon{background:#6448bd3b;color:#d4b8ff;width:48px;height:48px;border-radius:13px;display:grid;place-items:center;margin-bottom:3px}
+.lumi-app-card h2,.lumi-app-card h3{font-size:22px;line-height:1.25}
+.lumi-app-card p{color:#bbb5d4;font-size:13px;line-height:1.7;max-width:480px;flex:1}
+.lumi-app-card>span:last-child{color:#c4b0ff;font-weight:800;font-size:12px;display:flex;align-items:center;gap:8px}
+.lumi-app-shell{min-height:100vh;background:#0a0d17}
+.lumi-app-top{position:sticky;top:0;z-index:12;background:#101424eb;backdrop-filter:blur(14px);border-bottom:1px solid #30374d;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:17px max(22px,calc((100vw - 1440px)/2))}
+.lumi-app-back{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#bfaeff;font-weight:800;padding:9px 12px;border:1px solid #383d53;border-radius:9px;white-space:nowrap}
+.lumi-app-back:hover{background:#2b2642}
+.lumi-app-brand{display:inline-flex;gap:8px;align-items:center;font-size:16px;font-weight:900;color:#faf7ff}
+.lumi-app-brand svg{color:#a690ff}.lumi-app-brand span{color:#ad95e9;font-size:11px;letter-spacing:.1em}
+.lumi-app-body{max-width:1480px;margin:auto;padding:20px 24px 80px}
+.lumi-app-body .stream-studio{max-width:none}
+.creator-app-body{max-width:1120px}
+@media(max-width:1100px){.feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:790px){.bot-template-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lumi-app-top{padding:13px 15px}.lumi-app-body{padding:15px 16px 60px}.lumi-app-brand{font-size:14px}.lumi-app-brand span{font-size:10px}.lumi-app-grid{grid-template-columns:1fr}}
+@media(max-width:530px){.feature-grid,.bot-template-grid,.bot-catalog-filters{grid-template-columns:1fr}.bot-template-card{min-height:128px}.lumi-app-card{min-height:190px;padding:22px}.lumi-app-brand span{display:none}.lumi-app-top{gap:8px}.lumi-app-back{font-size:10px;padding:8px}}
+
+
+/* Cinematic AI bot: locally rendered one / two-camera transition sandbox */
+.cinematic-lab{margin-top:22px;background:linear-gradient(170deg,#171a2c,#0e1526);border-color:#675287}
+.cinematic-lab .panel-heading{align-items:center}.cinematic-lab .panel-heading h2{font-size:24px;margin-top:11px}
+.cinematic-stage{position:relative;overflow:hidden;border:1px solid #464269;border-radius:14px;background:#141a2e;box-shadow:0 12px 38px #0005}
+.cinematic-stage canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}
+.cinematic-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:18px}
+.cinematic-fields .form-field{min-width:0;margin:0}.cinematic-fields .form-field select{padding:13px}
+.cinematic-source-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}
+.cinematic-source{background:#181e30;border:1px solid #343a53;border-radius:12px;padding:15px;min-width:0}
+.cinematic-source strong{font-size:13px;display:block}
+.cinematic-source small{font-size:11px;color:#9ea6c0;display:block;overflow-wrap:anywhere;margin-top:6px;min-height:32px}
+.cinematic-source .stream-control{font-size:11px;cursor:pointer;min-height:36px;padding:9px 12px}
+.cinematic-buttons{align-items:stretch;gap:9px}.cinematic-buttons>.btn{min-height:44px}
+.cinematic-lab textarea{min-height:96px;resize:vertical;line-height:1.6}
+.cinematic-director-note{display:flex;align-items:flex-start;gap:10px;background:#312746;border:1px solid #554479;color:#e2d0ff;border-radius:10px;padding:14px;font-size:12px;line-height:1.5;margin-top:14px}
+.cinematic-director-note svg{flex:none}.cinematic-status{margin:15px 0 10px}
+@media(max-width:1000px){.cinematic-fields{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.cinematic-fields,.cinematic-source-grid{grid-template-columns:1fr}.cinematic-buttons>button{width:100%}.cinematic-lab .panel-heading h2{font-size:20px}}

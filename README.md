@@ -110,3 +110,33 @@ O painel **Stream Studio** inclui agora o módulo **Emitir em direto**, que comp
 **Limitações:** a qualidade depende do navegador, hardware e rede; não há garantia de estabilidade para 24/7, transmissão multiplataforma sem serviço, gravação na nuvem, reconexão automática com failover, plugins nativos OBS ou captura direta de jogos protegidos. Fazer testes privados antes de emitir publicamente.
 
 Referências técnicas: [RFC 9725 WHIP](https://www.rfc-editor.org/rfc/rfc9725.html), [Cloudflare Stream browser WHIP](https://developers.cloudflare.com/stream/examples/browser-based-webrtc/), [OBS WHIP](https://obsproject.com/kb/whip-streaming-guide).
+
+## Plataforma universal e aplicações separadas
+
+A LUMI é principalmente um **criador de bots universais**. O utilizador pode descrever qualquer objetivo em linguagem natural, escolher um exemplo editável ou criar instruções completamente novas. Os templates em `lib/bot-catalog.ts` cobrem organização, investigação, tarefas, automatizações entre serviços autorizados, vídeo/clip com IA, Discord, streaming, social, negócios e educação. As categorias são partilhadas entre interface, criação e planeamento IA.
+
+**Estrutura do produto:**
+- `/dashboard?tab=bots`: LUMI Builder e galeria de 14 modelos de bots.
+- `/dashboard?tab=apps`: catálogo de aplicações especializadas e opcionais.
+- `/dashboard/apps/content`: LUMI Creator Studio, espaço separado para guiões e projetos de conteúdo.
+- `/dashboard/apps/stream`: LUMI Stream Studio, programa especializado com cenas, gravação e WHIP.
+- A navegação antiga `/dashboard?tab=studio` e `/dashboard?tab=stream` redireciona para as novas páginas para preservar bookmarks.
+
+**O que está funcional agora:** login, criar/guardar/eliminar rascunhos de bots (máx. 3 na versão gratuita), modelos e planos de IA quando `OPENAI_API_KEY` está configurada; ferramentas beta do Stream Studio; guiões com API configurada.
+
+**O que ainda NÃO está pronto:** execução autónoma de todos os bots; transferências reais entre Google Drive/Dropbox/outros serviços; edição/renderização completa de vídeos com IA; agendamento/publicação nas redes; alteração automática de cenas por bot; execução de bots Discord. Para isso são necessárias APIs oficiais, OAuth, motores de processamento, filas de tarefas, isolamento de permissões e custos por utilização.
+
+Não executar transferências nem atuar sobre serviços de terceiros sem o consentimento e as permissões adequadas.
+
+
+### Novo modelo — Bot Diretor Cinematográfico IA
+
+No **LUMI Builder**, escolhe «Diretor Cinematográfico IA» na galeria. O modelo prepara um bot editável com instruções para criar efeitos de transição entre uma ou duas câmaras e renderiza uma demonstração logo abaixo do formulário.
+
+- Fontes: 1 ou 2 ficheiros de vídeo locais, câmaras do navegador quando suportadas, ou cenário de demonstração.
+- Comandos em português, por exemplo «faz uma subida estilo drone de 3 segundos e muda para a segunda câmara». A rota autenticada POST /api/bots/cinematic/plan usa IA via OPENAI_API_KEY quando configurada; se não estiver, interpreta palavras-chave localmente no servidor.
+- Efeitos implementados por canvas: elevação virtual estilo drone, whip-pan, órbita simulada, dolly zoom e crossfade.
+- O botão «Exportar clip» cria um vídeo local através de MediaRecorder, quando o navegador suporta esse recurso. A exportação não contém som e não faz upload dos vídeos de origem para a LUMI.
+- As imagens das câmaras/vídeos ficam no browser e não são enviadas à IA. Apenas o pedido textual pode ser analisado pelo fornecedor IA, se configurado.
+
+**Limitação essencial:** estes efeitos são transforms e misturas 2D de imagens existentes. Um "drone virtual" não é uma filmagem aérea real e não inventa uma nova perspetiva física. Geração volumétrica 3D ou novos ângulos realistas exigem um modelo de vídeo/depth adicional e são trabalho futuro. O bot é configurável e a demonstração funciona de forma limitada, mas não existe execução autónoma nem controlo remoto de dispositivos/câmaras.

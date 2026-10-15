@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { authenticatedUser } from "@/lib/auth";
 import { z } from "zod";
+import { botCategories } from "@/lib/bot-catalog";
 const schema=z.object({
   title:z.string().trim().min(3).max(75),
   instruction:z.string().trim().min(12).max(2500),
-  category:z.enum(["universal","content","stream","discord","planner","research","investment"]),
+  category:z.enum(botCategories),
   frequency:z.enum(["manual","daily","weekly"]),
 });
 export async function GET(){
