@@ -86,3 +86,16 @@
 .cinematic-director-note svg{flex:none}.cinematic-status{margin:15px 0 10px}
 @media(max-width:1000px){.cinematic-fields{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.cinematic-fields,.cinematic-source-grid{grid-template-columns:1fr}.cinematic-buttons>button{width:100%}.cinematic-lab .panel-heading h2{font-size:20px}}
+
+
+/* Portable universal bots */
+.bot-test-input{margin-top:15px}.bot-test-input input{font-size:12px}
+.bot-export{margin-top:14px;border-top:1px solid #3c4058;padding-top:13px}
+.bot-export summary{display:flex;align-items:center;gap:7px;color:#d7c8ff;font-size:12px;font-weight:800;cursor:pointer;list-style:none}
+.bot-export summary::-webkit-details-marker{display:none}
+.bot-export[open] summary{margin-bottom:12px}
+.bot-export-links{display:grid;gap:8px;grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:13px}
+.bot-export-links a{display:flex;align-items:center;justify-content:center;background:#343055;border:1px solid #5f528a;border-radius:9px;padding:11px;text-align:center;font-size:11px;font-weight:750;color:#f2eaff;min-width:0;overflow-wrap:anywhere}
+.bot-export-links a:hover{background:#594080;border-color:#b39ef7}
+.bot-export p{font-size:11px;color:#a6abc4;line-height:1.7}
+@media(max-width:1100px){.bot-export-links{grid-template-columns:1fr}}
