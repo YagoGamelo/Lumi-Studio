@@ -15,7 +15,7 @@ export async function POST(req:Request){
     const response=await openai.chat.completions.create({
       model:process.env.OPENAI_MODEL||"gpt-4.1-mini",temperature:0.3,max_tokens:400,
       messages:[
-        {role:"system",content:"Cria configurações de bots seguros a partir de pedidos em português. Responde APENAS JSON com title, instruction, category (universal/automation/transfer/planner/research/video_ai/stream_ai/stream/discord/content/social/shopping/investment/coding) e frequency (manual/daily/weekly). Não afirmes que há integrações ligadas, geração real de vídeo, publicações ou execução ativa. O plano é apenas um rascunho para aprovação. A instruction deve ser clara, até 1000 caracteres. Não incluir chaves, credenciais nem recomendações financeiras personalizadas."},
+        {role:"system",content:"Cria configurações de bots seguros a partir de pedidos em português. Responde APENAS JSON com title, instruction, category (universal/automation/transfer/planner/research/video_ai/cinematic/stream_ai/stream/discord/content/social/shopping/investment/coding) e frequency (manual/daily/weekly). Não afirmes que há integrações ligadas, geração real de vídeo, publicações ou execução ativa. O plano é apenas um rascunho para aprovação. A instruction deve ser clara, até 1000 caracteres. Não incluir chaves, credenciais nem recomendações financeiras personalizadas."},
         {role:"user",content:input.data.prompt}
       ]
     });
