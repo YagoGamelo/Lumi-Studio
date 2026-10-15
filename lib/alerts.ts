@@ -16,12 +16,17 @@ export function adminDb(){
  return createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
 }
 export const phonePattern=/^\+[1-9]\d{7,14}$/;
+export function textBeeReady(){
+ return Boolean(process.env.TEXTBEE_API_KEY);
+}
 export function messagingReady(channel:AlertChannel){
  if(channel==="inapp")return true;
- if(!process.env.TWILIO_ACCOUNT_SID||!process.env.TWILIO_AUTH_TOKEN||!process.env.TWILIO_FROM_NUMBER)return false;
- if(channel==="whatsapp")return Boolean(process.env.TWILIO_WHATSAPP_FROM&&process.env.TWILIO_WHATSAPP_CONTENT_SID);
- return true;
+ if(channel==="sms")return textBeeReady()||Boolean(process.env.TWILIO_ACCOUNT_SID&&process.env.TWILIO_AUTH_TOKEN&&process.env.TWILIO_FROM_NUMBER);
+ // No automatic WhatsApp delivery in free mode. Meta charges for proactive templates.
+ if(channel==="whatsapp")return Boolean(process.env.TWILIO_ACCOUNT_SID&&process.env.TWILIO_AUTH_TOKEN&&process.env.TWILIO_WHATSAPP_FROM&&process.env.TWILIO_WHATSAPP_CONTENT_SID);
+ return false;
 }
+export function freeSmsVerifyReady(){return textBeeReady()&&Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);}
 export function twilioVerifyReady(){
  return Boolean(process.env.TWILIO_ACCOUNT_SID&&process.env.TWILIO_AUTH_TOKEN&&process.env.TWILIO_VERIFY_SERVICE_SID);
 }
@@ -46,8 +51,27 @@ export async function requestPhoneVerification(phone:string){
 export async function checkPhoneVerification(phone:string,code:string){
  return twilioPost(verifyEndpoint("VerificationCheck"),{To:phone,Code:code});
 }
+/** TextBee Free: 1 Android phone + SIM (carrier SMS allowance still applies).
+ * Provider may accept a batch asynchronously; HTTP 200 is not proof of final delivery.
+ * API key must remain in a server-only environment variable. */
+export async function textBeeSend(phone:string,message:string){
+ const key=process.env.TEXTBEE_API_KEY;
+ if(!key)throw new Error("TextBee ainda não está configurado.");
+ if(!phonePattern.test(phone))throw new Error("Número destinatário inválido.");
+ const res=await fetch("https://api.textbee.dev/api/v1/gateway/send-sms",{
+  method:"POST",headers:{"x-api-key":key,"Content-Type":"application/json"},
+  body:JSON.stringify({recipients:[phone],message:message.slice(0,450)}),
+  cache:"no-store",signal:AbortSignal.timeout(12000)
+ });
+ if(!res.ok){
+  if(res.status===429)throw new Error("O limite gratuito de SMS do TextBee foi atingido.");
+  throw new Error("TextBee recusou a mensagem (HTTP "+res.status+"). Verifica o Android e o tarifário.");
+ }
+ return {status:"submitted"};
+}
 export async function sendAlert(channel:"sms"|"whatsapp",phone:string,content:string,botTitle:string){
  if(!messagingReady(channel))throw new Error("Canal de mensagens não configurado.");
+ if(channel==="sms"&&textBeeReady())return textBeeSend(phone,content);
  const sid=process.env.TWILIO_ACCOUNT_SID!;
  const fields:Record<string,string>={To:channel==="whatsapp"?"whatsapp:"+phone:phone};
  if(channel==="sms"){
