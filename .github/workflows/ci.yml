@@ -1,18 +1,17 @@
-name: Typecheck LUMI
+name: Validate LUMI
 on:
   pull_request:
     branches: [main]
   push:
-    branches: [feature/universal-bot-platform, main]
+    branches: [main]
 jobs:
-  build:
+  typecheck:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
-      - name: TypeScript
-        run: npm run typecheck
+      - run: npm run typecheck
