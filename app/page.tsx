@@ -8,7 +8,7 @@ const categories=[
   {icon:Globe2,title:"Automações entre aplicações",copy:"Desenha fluxos para transferir ficheiros e ligar plataformas, sempre com permissões."}
 ];
 export default function Home() {
-  const examples=BOT_TEMPLATES.filter(x=>["video","lives","transfer","automation","planner","discord","research","social","universal"].includes(x.id));
+  const examples=BOT_TEMPLATES.filter(x=>["cinematic","video","lives","transfer","automation","planner","discord","research","universal"].includes(x.id));
   return <div className="site">
     <div className="ambient ambient-one"/><div className="ambient ambient-two"/>
     <header className="topbar wrap">
