@@ -31,6 +31,7 @@ export default function StreamStudio({bots,username}:{bots:BotDraft[],username:s
  const [clientId,setClientId]=useState(""),[overlayToken,setOverlayToken]=useState(""),[overlayLive,setOverlayLive]=useState(false);
  const [uid,setUid]=useState("");
  const [showGuides,setShowGuides]=useState(false);
+ const [origin,setOrigin]=useState("");
  const screenEl=useRef<HTMLVideoElement>(null),cameraEl=useRef<HTMLVideoElement>(null),canvas=useRef<HTMLCanvasElement>(null);
  const screenStream=useRef<MediaStream|null>(null),cameraStream=useRef<MediaStream|null>(null),micStream=useRef<MediaStream|null>(null);
  const recorder=useRef<MediaRecorder|null>(null),recordStream=useRef<MediaStream|null>(null),audioCtx=useRef<AudioContext|null>(null);
@@ -51,6 +52,7 @@ export default function StreamStudio({bots,username}:{bots:BotDraft[],username:s
    }
   }catch{setStatus("Não foi possível ler as definições guardadas.");}
   setHydrated(true);
+  setOrigin(window.location.origin);
  },[storageKey,username]);
  useEffect(()=>{settingsRef.current=settings;if(hydrated)localStorage.setItem(storageKey,JSON.stringify({...settings,overlayToken,clientId}));},[settings,overlayToken,clientId,hydrated,storageKey]);
  useEffect(()=>{
@@ -153,12 +155,12 @@ export default function StreamStudio({bots,username}:{bots:BotDraft[],username:s
  function attach(id:string){update({attachedIds:settings.attachedIds.includes(id)?settings.attachedIds.filter(x=>x!==id):[...settings.attachedIds,id]});}
  function botAction(bot:BotDraft){update({message:"🤖 "+bot.title+": "+truncate(bot.instruction,80)});setStatus("Mensagem do bot aplicada à cena. O bot ainda não executou ações externas.");}
  const overlayUrl=useMemo(()=>{
-  if(typeof window==="undefined")return "";
-  const url=new URL("/overlay/stream",window.location.origin);
+  if(!origin)return "";
+  const url=new URL("/overlay/stream",origin);
   if(overlayLive&&overlayToken)url.searchParams.set("key",overlayToken);
   url.searchParams.set("title",settings.title);url.searchParams.set("handle",settings.handle);url.searchParams.set("accent",safeHex(settings.accent));url.searchParams.set("scene",activeScene?.name||"Live");url.searchParams.set("message",settings.message);
   return url.toString();
- },[settings,activeScene?.name,overlayLive,overlayToken]);
+ },[origin,settings,activeScene?.name,overlayLive,overlayToken]);
  async function copy(value:string){try{await navigator.clipboard.writeText(value);setStatus("Link copiado.");}catch{setStatus("Não foi possível copiar. Mantém o dedo sobre o link para copiar.");}}
  async function activateOverlay(){
   try{
