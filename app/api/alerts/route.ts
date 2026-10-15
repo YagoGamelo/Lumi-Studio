@@ -26,7 +26,7 @@ export async function GET(){
  if(schedules.error||phone.error||inbox.error)return NextResponse.json(unavailable,{status:503});
  const currentPhone=phone.data?.phone_e164||"";
  return NextResponse.json({schedules:schedules.data||[],inbox:inbox.data||[],phone:{masked:currentPhone?"•••• "+currentPhone.slice(-4):"",verified:Boolean(phone.data?.verified_at)},
- channels:{inapp:true,sms:messagingReady("sms"),whatsapp:messagingReady("whatsapp")}},{headers:{"Cache-Control":"no-store"}});
+ channels:{inapp:true,sms:messagingReady("sms"),whatsapp:true},whatsapp_mode:messagingReady("whatsapp")?"paid":"manual"},{headers:{"Cache-Control":"no-store"}});
 }
 export async function POST(req:Request){
  const auth=await authenticatedUser();
@@ -43,7 +43,7 @@ export async function POST(req:Request){
  if(counterError)return NextResponse.json(unavailable,{status:503});
  if((count||0)>=10)return NextResponse.json({error:"Limite beta de 10 alertas agendados por utilizador."},{status:429});
  if(input.channel!=="inapp"){
-  if(!messagingReady(input.channel))return NextResponse.json({error:"Os envios por "+(input.channel==="sms"?"SMS":"WhatsApp")+" ainda não estão configurados pelo operador da LUMI."},{status:503});
+  if(input.channel==="sms"&&!messagingReady("sms"))return NextResponse.json({error:"Para SMS automáticos, liga o TextBee gratuito com o teu Android ou outro fornecedor autorizado."},{status:503});
   const {data:phone,error}=await auth.db.from("bot_alert_phones").select("phone_e164,verified_at").eq("user_id",auth.user.id).maybeSingle();
   if(error||!phone?.verified_at||!phonePattern.test(phone.phone_e164))return NextResponse.json({error:"Antes de ativar este canal, confirma o teu número de telemóvel com um código SMS."},{status:403});
  }
@@ -56,5 +56,5 @@ export async function POST(req:Request){
   next_run_at:nextRun.toISOString(),enabled:true
  }).select("id,time_local,channel,next_run_at").single();
  if(error)return NextResponse.json({error:"Não foi possível guardar o alerta."},{status:500});
- return NextResponse.json({schedule:data,notice:"Alerta guardado. O envio automático depende de um processador de agendamentos ativo."},{status:201});
+ return NextResponse.json({schedule:data,notice:input.channel==="whatsapp"&&!messagingReady("whatsapp")?"Alerta guardado. Sem custos WhatsApp: a mensagem ficará na LUMI, para abrires e enviares manualmente no WhatsApp. Para entregas à hora marcada precisas de configurar o agendador.":"Alerta guardado. O envio automático depende de um processador de agendamentos ativo."},{status:201});
 }
