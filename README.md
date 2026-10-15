@@ -54,3 +54,35 @@ Referências oficiais:
 - https://supabase.com/docs/guides/auth/redirect-urls
 - https://supabase.com/docs/guides/auth/social-login/auth-google
 - https://nextjs.org/docs/app/guides/environment-variables
+
+
+## Novo: LUMI Stream Studio (beta)
+
+Depois de entrar e escolher um username, abre **Painel → Stream Studio** (`/dashboard?tab=stream`).
+
+Funcionalidades já implementadas no navegador:
+- Criar/escolher cenas (A começar, Em direto, Já volto, IRL, A terminar) e cenas personalizadas.
+- Pedir autorização de captura de ecrã, câmara e microfone; compor a imagem numa pré-visualização 16:9.
+- Gravar o vídeo composto para o dispositivo, incluindo áudio quando suportado por MediaRecorder e pelo navegador (Chrome/Edge no computador recomendado).
+- Personalizar título, cor e aviso; guardar cenas localmente e exportar configuração JSON.
+- Associar bots de rascunho à stream e mostrar avisos manuais, sem fingir que os bots já correm externamente.
+- Criar um URL público **Browser Source** em /overlay/stream para OBS Studio/Streamlabs (camada transparente). Podes usar o overlay mesmo sem o SQL adicional, mas nesse caso é estático.
+- Preparar convite OAuth2 da **tua própria aplicação Discord** usando só o Client ID público (nunca Bot Token), com permissões mínimas de ver canais + enviar mensagens.
+
+### Ativar o overlay com atualização ao vivo
+
+1. No Supabase deste projeto, abre **SQL Editor → New query**.
+2. Executa o conteúdo completo de **supabase/stream.sql**, **não** o schema.sql inicial. É uma migração adicional que cria a tabela stream_profiles e a função restrita de leitura por token.
+3. No **Stream Studio**, clica **Ativar sincronização em tempo real**. Isto cria um token aleatório privado e grava as definições por utilizador com RLS.
+4. Clica **Copiar link do overlay** novamente e cola no OBS/Streamlabs: **Fontes → Browser Source / Fonte de navegador**. Resolução aconselhada: 1920 × 1080.
+5. A partir daí, o overlay consulta periodicamente (cerca de 3 s) as alterações de cena, título e mensagem. Mantém o link do overlay em privado.
+
+A sincronização **não transmite vídeo**: o OBS/Streamlabs continua a enviar a live para o destino. O botão **Gravar vídeo** grava apenas no dispositivo do utilizador. A app **não é um substituto completo de OBS** e não oferece emissão RTMP/SRT/WebRTC, chat real Twitch/YouTube, controlo OBS por WebSocket, execução de bots Discord, cortes/edição automática ou passagem sem interrupção PC↔IRL. Esses módulos exigem serviços, integrações autenticadas, ingestão/relay de vídeo, políticas de segurança e testes em dispositivos físicos antes de estarem disponíveis.
+
+**Nota técnica e de segurança:** a tabela de overlay só pode ser alterada pelo respetivo dono autenticado; a função pública devolve apenas campos visuais ao receber o token longo aleatório, e não devolve dados da conta. Nunca colocar tokens de Discord, chaves de stream, OAuth secrets ou a chave service_role em fontes browser ou variáveis NEXT_PUBLIC_.
+
+Referências:
+- https://obsproject.com/kb/browser-source
+- https://discord.com/developers/docs/topics/oauth2
+- https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia
+- https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder
