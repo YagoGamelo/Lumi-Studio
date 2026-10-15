@@ -99,3 +99,57 @@
 .alert-inbox-item p{white-space:pre-wrap;font-size:12px;color:#ddd8eb;line-height:1.7;margin:9px 0;overflow-wrap:anywhere}
 @media(max-width:1250px){.alert-grid{grid-template-columns:1fr}}
 @media(max-width:550px){.alert-settings{grid-template-columns:1fr}.alert-workspace .heading-row h1{font-size:28px}}
+
+
+/* LUMI universal business customer-service workspace */
+.support-dashboard{max-width:1450px;margin:0 auto}.support-dashboard .heading-row{align-items:center}
+.support-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:15px 0 20px}
+.support-stats>div{background:#1b1c30;border:1px solid #373750;border-radius:12px;padding:18px;display:grid;gap:9px}
+.support-stats svg{color:#bb9eff}.support-stats strong{font-size:28px;font-weight:850}.support-stats small{font-size:11px;color:#a7a5bb}
+.support-tabbar{display:flex;gap:10px;flex-wrap:wrap;border-bottom:1px solid #3b3b53;padding-bottom:12px}
+.support-tabbar button{background:transparent;border:1px solid #3a3a53;border-radius:9px;color:#d1cde5;padding:12px 16px;font-weight:800;font-size:12px}
+.support-tabbar button.active{background:#3b3069;border-color:#8e72e7;color:white}
+.support-two-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px;align-items:start;margin-top:17px}
+.support-section{margin-top:0}.support-section .panel-heading h2{display:flex;gap:9px;align-items:center}.support-section .panel-heading h2 svg{color:#bca3ff}
+.support-section textarea{min-height:74px;resize:vertical;line-height:1.6}
+.support-check{display:flex;gap:10px;align-items:flex-start;margin:14px 0;color:#d7d1e6;font-size:12px;line-height:1.7}
+.support-check input{width:17px;height:17px;flex:none;accent-color:#a98bff;margin-top:3px}
+.support-share-link{word-break:break-all;font-size:12px;padding:15px;background:#0d1120;border:1px solid #463b67;border-radius:10px;color:#d4c6ff}
+.support-channels{margin-top:20px;padding:18px;border:1px solid #393853;border-radius:12px;background:#171b2d}
+.support-channels h3{display:flex;align-items:center;gap:8px;font-size:14px;color:#efebff;margin-bottom:12px}
+.support-channels h3 svg{color:#b8a2ff}.support-channels p{font-size:12px;color:#b9b6cc;line-height:1.8;margin:10px 0}
+.support-thread{display:flex;align-items:center;gap:7px;border:1px solid #33384e;border-radius:10px;margin:9px 0;background:#1a2032}
+.support-thread.selected{border-color:#9672e9;background:#29213f}
+.support-thread>button:first-child{min-width:0;flex:1;text-align:left;border:none;background:transparent;color:#eae3ff;padding:14px}
+.support-thread strong,.support-thread span{display:block;overflow-wrap:anywhere}.support-thread strong{font-size:12px}.support-thread span{font-size:11px;color:#9b9fb6;margin-top:7px}
+.support-thread .support-delete{padding:13px;flex:none;border:0;background:transparent;color:#deb0c1}
+.support-admin-messages{border:1px solid #36374f;background:#0f1525;border-radius:12px;padding:13px;min-height:160px;max-height:400px;overflow:auto;margin-bottom:17px}
+.support-admin-message{margin:8px 0;padding:13px;border-radius:10px;background:#252a41}
+.support-admin-message.customer{background:#2a244a}.support-admin-message.human{background:#1c3d42}
+.support-admin-message strong{display:block;font-size:11px;color:#d8c7ff}.support-admin-message p{margin:6px 0;white-space:pre-wrap;font-size:12px;line-height:1.65;overflow-wrap:anywhere}
+.support-admin-message small{font-size:10px;color:#abb0c4}
+.support-call{background:#191e30;border:1px solid #383c53;padding:16px;border-radius:12px;margin-top:12px}
+.support-call strong,.support-call small{display:block}.support-call strong{font-size:13px}.support-call small{font-size:10px;color:#9fa4be;margin-top:6px}
+.support-call p{white-space:pre-wrap;font-size:12px;color:#d5d1df;margin:14px 0;line-height:1.7}
+.support-call button{display:flex;gap:6px;align-items:center;background:transparent;color:#d5a1b9;border:0;font-size:11px}
+.support-public-page{min-height:100dvh;background:radial-gradient(circle at top right,#382753,#101527 60%);display:flex;justify-content:center;align-items:stretch;padding:30px 12px}
+.support-chat-frame{background:#181d31;border:1px solid #49405f;border-radius:20px;width:min(100%,650px);display:flex;flex-direction:column;overflow:hidden;min-height:80dvh;box-shadow:0 15px 60px #0007}
+.support-chat-frame header{padding:24px 25px;background:linear-gradient(135deg,#35265b,#1b2541);border-bottom:1px solid #4b3e65}
+.support-chat-frame header h1{font-size:26px;margin:9px 0;color:#fff}
+.support-chat-frame header p{color:#c9bddf;font-size:13px;line-height:1.6}
+.support-identity{font-size:10px;color:#d9c6ff;font-weight:900;letter-spacing:.11em}
+.support-chat-history{flex:1;display:flex;flex-direction:column;gap:10px;padding:20px;overflow-y:auto;min-height:260px;max-height:65dvh}
+.support-chat-welcome{font-size:12px;color:#b8b3cc;line-height:1.8}
+.support-chat-bubble{max-width:88%;padding:13px 15px;border-radius:15px;background:#2b304b;align-self:flex-start}
+.support-chat-bubble.mine{background:#6040a8;align-self:flex-end}
+.support-chat-bubble small{font-size:10px;color:#e1d5fa}.support-chat-bubble p{font-size:13px;line-height:1.65;color:#fff;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:6px}
+.support-name-label{padding:10px 20px;font-size:11px;color:#bcafd5}
+.support-name-label input{display:block;margin-top:7px;width:100%;padding:11px;border:1px solid #534a6b;border-radius:8px;background:#222740;color:white}
+.support-chat-form{display:flex;gap:9px;padding:15px;border-top:1px solid #46445d}
+.support-chat-form input{flex:1;min-width:0;border-radius:9px;border:1px solid #504867;background:#262940;padding:13px;color:white}
+.support-chat-form button{border:0;border-radius:9px;background:#7656d8;color:white;padding:12px 18px;font-weight:800}
+.support-chat-form button:disabled{opacity:.5}
+.support-chat-notice{font-size:12px;padding:8px 16px;color:#e7c2f8}
+.support-chat-frame footer{color:#aba3c2;font-size:10px;line-height:1.6;padding:10px 17px 19px}
+@media(max-width:1180px){.support-two-col{grid-template-columns:1fr}}
+@media(max-width:600px){.support-stats{grid-template-columns:1fr 1fr}.support-stats>div:last-child{grid-column:1/-1}.support-public-page{padding:0}.support-chat-frame{border-radius:0;min-height:100dvh}.support-tabbar button{flex:1;font-size:11px}}
