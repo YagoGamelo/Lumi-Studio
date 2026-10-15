@@ -168,3 +168,42 @@ As instruções ficam no bot.json. O lumi-manifest.json descreve capacidades. Nu
 - Não colocar .env, tokens Discord, chaves OAuth nem OPENAI_API_KEY no GitHub ou em variáveis NEXT_PUBLIC_.
 - Node.js 22+ e servidor HTTPS público são necessários para integração remota, especialmente Discord.
 - Ativar monitorização e limites de utilização para bots públicos e serviços pagos.
+
+## LUMI Bot Alerts — informação por horário, SMS, WhatsApp e alarmes
+
+**Novidade no painel:** Alertas e lembretes (`/dashboard?tab=alerts`). Associa qualquer bot guardado a uma mensagem/tema, escolhe hora local, fuso, frequência (diária, dias úteis ou semanal) e canal. A página mostra alertas agendados, permite pausar/remover e apresenta uma caixa de entrada com as notificações geradas. Também oferece o modelo «Informações à hora escolhida» na galeria de bots.
+
+### Ativar a base de dados
+
+No Supabase do mesmo projeto, executa uma única vez o novo ficheiro `supabase/alerts.sql` no SQL Editor. É adicional ao `supabase/schema.sql`, que não deves repetir. Cria tabelas protegidas por RLS para horários, números verificados e caixa de entrada, com uma função atómica de reserva de tarefas para o processador.
+
+### Iniciar o processador de tarefas
+
+Para que os alertas sejam realmente processados, configura no servidor da Vercel (não NEXT_PUBLIC_):
+- `SUPABASE_SERVICE_ROLE_KEY` (secreto do projeto Supabase),
+- `CRON_SECRET` (valor aleatório longo com pelo menos 24 caracteres),
+- opcionalmente `OPENAI_API_KEY` (para preparar resumos textuais; **não** acede a notícias em tempo real sem APIs/fontes ligadas).
+
+Agenda num serviço de cron que permita frequência de um minuto uma chamada HTTPS POST para `/api/internal/alerts/dispatch` com cabeçalho `Authorization: Bearer CRON_SECRET`. O processador verifica essa credencial, reserva os alertas vencidos com bloqueios SQL, regista a mensagem na caixa de entrada e avança para a próxima execução considerando fuso horário e mudança de hora. **Não configures Vercel Hobby Cron a cada minuto**: segundo a documentação atual, esse plano permite agendamento diário com precisão aproximada de uma hora; para horários escolhidos ao minuto precisa de um agendador externo apropriado ou upgrade.
+
+Sem cron ativo, a página **guarda configurações mas não envia nada sozinha**. O SQL e o worker não são instalados automaticamente por criar os ficheiros no GitHub.
+
+### SMS e WhatsApp com Twilio
+
+Na Vercel, define os seguintes segredos privados em Production:
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` (necessários para confirmar o próprio número de telemóvel através de código SMS).
+- `TWILIO_FROM_NUMBER` (remetente SMS configurado no Twilio).
+- `TWILIO_WHATSAPP_FROM` (remetente WhatsApp Business autorizado no formato `whatsapp:+...`).
+- `TWILIO_WHATSAPP_CONTENT_SID` (Content SID de um template de WhatsApp aprovado, contendo o nome do bot como variável `{{1}}` e indicação para abrir a caixa de entrada da LUMI).
+
+O envio WhatsApp de notificações programadas fora da janela de atendimento de 24 horas requer **template pré-aprovado**. A LUMI envia uma notificação-modelo com o nome do bot e guarda o resumo completo na sua caixa de entrada (evita tentar enviar conteúdo livre fora da janela). Precisas de conta e aprovação WhatsApp Business e pagamentos Twilio/Meta conforme o caso.
+
+O utilizador introduz e verifica **o próprio número** por SMS, autoriza expressamente o envio WhatsApp (opt-in) e pode desligar o número ou apagar/pausar agendamentos. A verificação limita pedidos por conta. Nunca guardes chaves no GitHub ou no browser.
+
+### Alarmes no telemóvel
+
+Em cada alerta existe «Alarme .ics». Descarrega e importa o ficheiro para uma aplicação de calendário/alarme compatível (que suporte VALARM e TZID). Isto pode lembrar o utilizador quando a LUMI estiver fechada; o comportamento de notificação depende das definições da aplicação do dispositivo, e não é uma garantia de alarme sonoro do sistema operativo.
+
+**Limitações:** os alertas SMS/WhatsApp só funcionarão após ativar SQL, credenciais do fornecedor e agendador. A geração de notícias financeiras, desportivas e outras informações atuais exige uma API de pesquisa/notícias adicional: o modelo textual sem acesso à Web não inventa factos recentes. A caixa de entrada não usa ainda push quando a página está fechada. O sistema tem limite beta de 10 agendamentos por conta e processa pequenos lotes para controlar custos.
+
+Documentação oficial: https://www.twilio.com/docs/verify/api ; https://www.twilio.com/docs/whatsapp/tutorial/send-whatsapp-notification-messages-templates ; https://vercel.com/docs/cron-jobs/usage-and-pricing
