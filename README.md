@@ -140,3 +140,43 @@ Na biblioteca de bots universais escolhe **Diretor de câmaras cinematográficas
 - **Não gera cenários novos, movimentos físicos de drone, profundidade 3D real, nem é um editor multicâmara profissional**. Para efeitos generativos de outra cena, tracking de profundidade, continuidade realista e sincronização profissional de áudio é necessária infraestrutura adicional e testes.
 
 O editor não publica automaticamente, não emite cenas ao vivo e não armazena media privados no servidor.
+
+## Bot de informações programadas — LUMI Alerts
+
+Em `/dashboard?tab=alerts`, escolhe um bot universal já criado, a mensagem ou tema, hora, frequência e canal de entrega. A interface permite consultar a caixa de entrada, pausar, reativar, eliminar e exportar cada alerta como alarme do calendário (`.ics`). A galeria de bots inclui o modelo «Bot de informações e alarmes».
+
+### 1. Ativar no Supabase
+
+Executa `supabase/alerts.sql` uma vez no SQL Editor do projeto Supabase, além do schema inicial. Este ficheiro acrescenta tabelas com permissões por utilizador, números verificados e reservas atómicas de tarefas. Não voltes a executar o `schema.sql` inicial.
+
+### 2. Processamento automático dos horários
+
+Define as variáveis **privadas** na Vercel: `SUPABASE_SERVICE_ROLE_KEY` (nunca NEXT_PUBLIC_) e `CRON_SECRET` (pelo menos 24 caracteres aleatórios). Opcionalmente configura `OPENAI_API_KEY` para resumir informações gerais — sem acesso a notícias em tempo real, não inventar notícias atuais.
+
+Configura um agendador que faça **POST a cada minuto** para `https://TEU-SITE/api/internal/alerts/dispatch` com o cabeçalho `Authorization: Bearer CRON_SECRET`. Este endpoint é privado, reserva até cinco alertas por execução, grava na caixa de entrada e, para canais externos, envia ao fornecedor. Sem o agendador **os alertas ficam guardados mas não são entregues automaticamente**.
+
+**Atenção ao Vercel Hobby:** o cron integrado tem frequência mínima diária e precisão aproximada de uma hora, por isso não chega para envios a horários personalizados. Usa um serviço de cron externo compatível com minuto, um worker persistente noutro serviço, ou um plano que permita execução por minuto.
+
+### 3. SMS e WhatsApp
+
+Precisas de um fornecedor de mensagens, por exemplo Twilio, configurado com os seguintes segredos privados:
+
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`: permitem confirmar a posse do número por código SMS;
+- `TWILIO_FROM_NUMBER`: remetente SMS autorizado;
+- `TWILIO_WHATSAPP_FROM`: remetente WhatsApp Business, no formato `whatsapp:+...`;
+- `TWILIO_WHATSAPP_CONTENT_SID`: modelo WhatsApp previamente aprovado, contendo como variável 1 o nome do bot e um convite para abrir as informações na LUMI.
+
+Os utilizadores só podem configurar SMS/WhatsApp para o seu número verificado. A ativação de WhatsApp exige consentimento explícito. Podem pausar alertas e desligar o número. Verificação e envio têm custos. Mensagens iniciadas pela empresa fora da janela de atendimento de 24 horas exigem templates aprovados; por isso o conteúdo completo fica na caixa de entrada LUMI e a mensagem WhatsApp é um aviso com template.
+
+### 4. Alarmes sem a página aberta
+
+Em cada horário guardado, usa o botão **Alarme .ics** para importar um evento recorrente com VALARM numa aplicação de calendário compatível. A vibração ou o som dependem do calendário/definições do dispositivo. O inbox da LUMI não envia push em segundo plano nesta fase.
+
+### Limites e segurança
+
+- Até 10 alertas por utilizador nesta beta; envio externo não está ativo até a migração, o processador e o fornecedor estarem configurados.
+- Informações atualizadas exigem fontes/APIs oficiais de notícias, preços ou dados; o modelo textual isolado não consegue verificar acontecimentos atuais.
+- Os números e os horários estão protegidos na base de dados; as chaves do fornecedor nunca são enviadas para o browser.
+- Não enviar mensagens para terceiros sem autorização. Opt-in e confirmação de número são obrigatórios.
+
+Referências: https://www.twilio.com/docs/verify/api ; https://www.twilio.com/docs/whatsapp/tutorial/send-whatsapp-notification-messages-templates ; https://vercel.com/docs/cron-jobs/usage-and-pricing
