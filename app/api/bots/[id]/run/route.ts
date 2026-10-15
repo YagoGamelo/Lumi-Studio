@@ -16,6 +16,10 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
  const {data:bot,error}=await auth.db.from("bots").select("title,instruction").eq("id",id).eq("user_id",auth.user.id).maybeSingle();
  if(error)return NextResponse.json({error:"Erro a carregar o bot."},{status:500});
  if(!bot)return NextResponse.json({error:"Bot não encontrado."},{status:404});
+ const since=new Date(Date.now()-86400000).toISOString();
+ const {count,error:quotaError}=await auth.db.from("bot_runs").select("id",{head:true,count:"exact"}).eq("user_id",auth.user.id).gte("created_at",since);
+ if(quotaError)return NextResponse.json({error:"O serviço de testes está temporariamente indisponível."},{status:503});
+ if((count||0)>=20)return NextResponse.json({error:"Atingiste o limite de 20 testes com IA por 24 horas nesta fase beta."},{status:429});
  if(!process.env.OPENAI_API_KEY)return NextResponse.json({error:"O teste por IA ainda não está ativado. Configura OPENAI_API_KEY nas variáveis privadas da Vercel. Já podes criar e exportar o teu bot."},{status:503});
  try{
   const openai=new OpenAI({apiKey:process.env.OPENAI_API_KEY,timeout:18000});
@@ -29,6 +33,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   });
   const output=reply.choices[0]?.message?.content;
   if(!output)return NextResponse.json({error:"A IA não devolveu resposta."},{status:502});
+  await auth.db.from("bot_runs").insert({bot_id:id,user_id:auth.user.id,result:output,status:"completed"});
   return NextResponse.json({output,mode:"text_preview"},{headers:{"Cache-Control":"no-store"}});
  }catch{return NextResponse.json({error:"O modelo de IA não conseguiu responder agora."},{status:502});}
 }
