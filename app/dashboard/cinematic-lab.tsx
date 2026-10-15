@@ -185,7 +185,7 @@ export default function CinematicLab({botTitle,initialPrompt,onClose}:Props){
    setMessage("A exportar a transição. Mantém este separador aberto.");
   }catch(error){exportingRef.current=false;setExporting(false);setMessage(error instanceof Error?error.message:"Exportação não suportada.");}
  }
- return <div className="cinema-lab">
+ return <div className="cinema-lab" id="cinema-lab">
   <div className="cinema-header"><div><div className="section-kicker"><WandSparkles size={15}/> LUMI CAMERA LAB · BETA</div><h2>Diretor de transições cinematográficas</h2><p>Bot: {botTitle||"Câmara cinematográfica"} · Uma ou duas câmaras ou vídeos.</p></div><button className="stream-control" onClick={onClose} type="button">Fechar editor</button></div>
   <div className="cinema-layout">
    <div className="cinema-primary">
