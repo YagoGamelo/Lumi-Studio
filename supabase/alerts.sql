@@ -43,7 +43,23 @@ alter table public.bot_alert_schedules enable row level security;
 drop policy if exists bot_alert_schedules_owner on public.bot_alert_schedules;
 create policy bot_alert_schedules_owner on public.bot_alert_schedules
  for all to authenticated using(user_id=auth.uid()) with check(user_id=auth.uid());
-grant select,insert,update,delete on public.bot_alert_schedules to authenticated;
+-- Access is column restricted: users cannot move a job to "now" or bypass its claim lease.
+revoke insert,update,delete on public.bot_alert_schedules from authenticated,anon;
+grant select,delete on public.bot_alert_schedules to authenticated;
+grant insert (user_id,bot_id,channel,time_local,timezone,recurrence,weekday,message,whatsapp_opt_in,enabled,next_run_at) on public.bot_alert_schedules to authenticated;
+grant update (enabled) on public.bot_alert_schedules to authenticated;
+
+create or replace function public.check_bot_alert_owner() returns trigger
+language plpgsql security definer set search_path=public as $
+begin
+ if not exists(select 1 from public.bots where id=new.bot_id and user_id=new.user_id) then
+  raise exception 'Bot não pertence à conta';
+ end if;
+ return new;
+end $;
+drop trigger if exists bot_alert_owner_trigger on public.bot_alert_schedules;
+create trigger bot_alert_owner_trigger before insert or update of bot_id,user_id on public.bot_alert_schedules
+ for each row execute function public.check_bot_alert_owner();
 
 create table if not exists public.bot_alert_inbox (
  id uuid primary key default gen_random_uuid(),
