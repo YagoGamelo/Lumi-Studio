@@ -234,3 +234,41 @@ Os webhooks verificam a assinatura X-Twilio-Signature, restringem destinatário 
 - Há limites básicos de pedidos e mensagens para controlar custos na beta. Para produção são necessárias proteções antiabuso/rate limit persistentes e testes de carga.
 
 Documentação: https://www.twilio.com/docs/usage/webhooks/webhooks-security ; https://www.twilio.com/docs/messaging/twiml ; https://www.twilio.com/docs/voice/twiml/gather
+
+## LUMI sem Twilio: SMS com Android e WhatsApp oficial
+
+### SMS: TextBee Free (sem assinatura Twilio)
+
+A LUMI tem agora um transporte SMS alternativo ao Twilio. O fornecedor open source [TextBee](https://textbee.dev/) usa **o teu Android e o SIM que já tens**, através de uma API autenticada. Oferece [plano gratuito](https://textbee.dev/pricing) de 50 SMS/dia e 300 mensagens/mês (enviadas e recebidas; limites atuais verificados em outubro de 2026). **Os SMS continuam sujeitos ao teu tarifário e a eventuais restrições de uso do operador**, e o dispositivo Android deve estar ligado e ter ligação à Internet.
+
+1. Criar uma conta gratuita em `https://textbee.dev/`, sem cartão bancário, e confirmar o email.
+2. Instalar a app TextBee no Android, autorizar o SMS e ligar o telemóvel à conta conforme o painel.
+3. Criar uma API Key em TextBee, sem a partilhar.
+4. Em **Vercel > lumi-studio > Settings > Environment Variables**, guardar como **Secret / Production** a variável `TEXTBEE_API_KEY` (o valor vem do TextBee). NUNCA usar `NEXT_PUBLIC_TEXTBEE_API_KEY`.
+5. Se ainda não tiveres executado a migração `supabase/alerts.sql` no Supabase, executa-a primeiro. Executa **uma única vez** a migração adicional **`supabase/alerts-free-sms.sql`**. Não apagar nenhuma tabela antiga.
+6. Fazer **Redeploy** da LUMI na Vercel.
+7. Na LUMI, entra em **Alertas e lembretes → O teu telemóvel**, confirma a autorização, pede o código e verifica. Agora já podes criar um bot e selecionar **SMS**. É necessário um agendador externo ativo para envios automáticos às horas guardadas.
+
+O envio de código passa a usar TextBee se `TEXTBEE_API_KEY` estiver configurada, caso contrário mantém o Twilio opcional. Os códigos TextBee têm 6 dígitos, validade de 10 minutos, limite de tentativas e apenas um hash privado na base de dados. Não guardar códigos PIN nem chaves no frontend. Se o plano gratuito terminar ou o telemóvel ficar desligado, os SMS não são entregues.
+
+### WhatsApp sem mensagens pagas automáticas
+
+**Alertas programados:** o canal WhatsApp gratuito guarda o aviso na caixa de entrada LUMI. Quando o processador de agendamento o criar, a opção **«Abrir e enviar pelo WhatsApp»** abre uma mensagem pré-escrita endereçada ao teu número verificado para **envio manual**. A LUMI não envia essa mensagem automaticamente; o utilizador confirma. Assim evita enviar templates comerciais que a Meta pode cobrar.
+
+**Respostas de atendimento (opcional, automático):** foi preparado um webhook da **WhatsApp Business Cloud API oficial**, e não uma integração não autorizada com o WhatsApp Web. Como a Meta anunciou em 1 de outubro de 2026, há uma franquia de 1000 mensagens de serviço gratuitas/mês por número de negócio; depois dessa franquia, mensagens são cobradas. O conector só responde a mensagens recebidas de clientes e limita as tentativas a um teto local configurado (100/mês por omissão). **Não garante custo zero**, pois não conhece outras mensagens enviadas na mesma conta e o negócio pode estar sujeito a custos/configuração Meta. Não ativa nada sozinho: está desligado até autorização explícita.
+
+Para testar o conector Meta no **atendimento de uma única loja**:
+
+1. Criar uma aplicação Meta com produto WhatsApp Business, um WhatsApp Business Account e um número empresarial autorizado. Confirmar no Meta Business o acesso e os custos antes de emitir.
+2. Executar no Supabase `supabase/whatsapp-free-replies.sql` (migração adicional, não repetir schema.sql).
+3. Na Vercel guardar **Secrets / Production**: `META_WA_PHONE_NUMBER_ID`, `META_WA_OWNER_ID` (user ID UUID Supabase da loja piloto), `META_WA_ACCESS_TOKEN`, `META_WA_APP_SECRET`, `META_WA_VERIFY_TOKEN` (frase aleatória tua) e `META_WA_GRAPH_VERSION` (versão Graph API atual fornecida no Meta Developer Dashboard). Opcional: `META_WA_FREE_REPLIES_PER_MONTH=100`. Nunca colocar tokens no browser.
+4. Configurar o callback público `https://lumi-studio-two.vercel.app/api/support/meta/whatsapp` com GET de verificação e POST assinados, subscrever mensagens do WhatsApp Business Account.
+5. **Apenas depois de confirmares o orçamento**, adicionar `META_WA_FREE_REPLIES_ENABLED=true` e fazer Redeploy. Sem esta variável ou se o limite local estiver esgotado, nenhuma resposta automática é enviada pela API Meta.
+
+A LUMI valida `x-hub-signature-256`, ignora webhooks repetidos, guarda mensagens na caixa privada da loja, responde com o motor de atendimento existente e regista as tentativas numa tabela protegida. O limite de 100 é **local** e não conhece outras ferramentas ligadas à mesma conta, pelo que é obrigatório vigiar os gastos no Meta. Para mensagens programadas fora da janela de atendimento não há garantia de gratuidade; essas mensagens continuam manuais na versão sem custos.
+
+### Alternativa WhatsApp Business gratuita sem APIs
+
+A aplicação WhatsApp Business no próprio telemóvel é gratuita e pode configurar mensagens básicas de saudação e ausência. Não dá, por si só, a capacidade de integrar automaticamente todos os horários e agentes LUMI. Não usamos bibliotecas de automação não oficial do WhatsApp Web para evitar bloqueios de contas e problemas de privacidade.
+
+Referências: `https://textbee.dev/docs/getting-started`, `https://textbee.dev/pricing`, `https://whatsappbusiness.com/resources/faq/`, `https://www.postman.com/meta/whatsapp-business-platform/`.
