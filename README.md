@@ -357,3 +357,8 @@ Consulta [docs/ai-router.md](docs/ai-router.md) para configuração segura na Ve
 ## LUMI AI — inteligência híbrida própria
 
 A identidade principal do produto é a **LUMI AI**. O Router pode usar um modelo com pesos disponíveis num servidor de inferência privado e/ou OpenAI, Claude e Gemini. A biblioteca de notas do utilizador exige consentimento explícito em cada pedido; não constitui treino automático de modelos. O modelo próprio não corre na Vercel e não funciona até ser alojado num servidor seguro. Consulta [docs/lumi-hybrid-ai.md](docs/lumi-hybrid-ai.md). Para ativar as notas, executar a migração adicional **supabase/lumi-knowledge.sql** no SQL Editor.
+
+
+## LUMI Mundo — descoberta exterior experimental
+
+A LUMI AI poderá aprender a partir de fontes externas autorizadas, sem usar conversas privadas como material de treino. A **primeira fase** só descobre títulos e referências de feeds RSS oficiais NASA/arXiv, uma vez ao dia, e não lê artigos, vê vídeos, transfere transcrições ou faz treino. A migração adicional é **supabase/lumi-world.sql**. Um worker protegido por CRON_SECRET e SUPABASE_SERVICE_ROLE_KEY consulta as fontes diariamente após deploy; verifica os requisitos de segurança e de faturação antes de ativar. O painel LUMI IA apresenta as referências com origem. Consulta [docs/lumi-world-learning.md](docs/lumi-world-learning.md) para as fases futuras e limites legais.
