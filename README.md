@@ -272,3 +272,53 @@ A LUMI valida `x-hub-signature-256`, ignora webhooks repetidos, guarda mensagens
 A aplicação WhatsApp Business no próprio telemóvel é gratuita e pode configurar mensagens básicas de saudação e ausência. Não dá, por si só, a capacidade de integrar automaticamente todos os horários e agentes LUMI. Não usamos bibliotecas de automação não oficial do WhatsApp Web para evitar bloqueios de contas e problemas de privacidade.
 
 Referências: `https://textbee.dev/docs/getting-started`, `https://textbee.dev/pricing`, `https://whatsappbusiness.com/resources/faq/`, `https://www.postman.com/meta/whatsapp-business-platform/`.
+
+
+## WhatsApp com fotografias, projetos e agendas (fase experimental)
+
+**Esta fase está no código mas DESATIVADA na publicação por omissão.** Exige conta Meta oficial, API de IA, SQL adicionais e testes. Não cria eventos diretamente no Google/Apple Calendar sem OAuth nem garante custos zero.
+
+### Fluxo de um projeto
+
+1. Um cliente da loja piloto envia pelo WhatsApp "Preciso de uma memória descritiva deste projeto" (com texto e/ou foto JPG/PNG).
+2. A LUMI pede **AUTORIZO FOTOS**, se a foto ainda não tiver consentimento; o cliente reenvia a foto após autorizar.
+3. A IA usa texto, imagem e as instruções do bot para criar um **rascunho** de memória descritiva: factos conhecidos, lacunas e estrutura técnica.
+4. O cliente recebe link secreto para descarregar TXT do rascunho (expira ao fim de 48 horas). É preciso validação por técnico habilitado; nunca há aprovação ou assinatura automática.
+
+**Não aceitamos PDF ou CAD nesta primeira versão.** Uma imagem de planta não serve para medir áreas ou afirmar requisitos legais.
+
+### Fluxo de medicação (apenas com autorização de saúde e aprovação humana)
+
+1. O responsável ativa **explicitamente** `LUMI_HEALTH_WORKFLOWS_ENABLED=true` **apenas após** revisão legal, privacidade e segurança. Está desativado por omissão.
+2. A pessoa envia "medicamentos" e autoriza o tratamento de dados de saúde respondendo **AUTORIZO SAUDE**.
+3. Volta a enviar a imagem e **os dados fornecidos pelo prescritor**: medicamento, dose, intervalo, hora de primeira toma e número de dias (máximo 90 no protótipo). Não deduzir a dose a partir da concentração da embalagem!
+4. A LUMI devolve um **rascunho** e pergunta pelo que falta. Nunca cria um lembrete sem os cinco campos completos.
+5. A pessoa confere a receita e responde **CONFIRMO RECEITA**. Só então o bot disponibiliza um ficheiro privado `.ics`, válido por 48h, para a pessoa **importar manualmente** na sua agenda.
+6. Não é integração Google Calendar / iPhone; não envia automaticamente para a agenda, não verifica se a pessoa tomou o medicamento e não substitui um médico ou farmacêutico.
+
+A operação `APAGAR DADOS` elimina consentimento, rascunhos e histórico das conversas deste canal na LUMI; não consegue apagar dados dos fornecedores externos ou do equipamento da pessoa. A fotografia não é guardada permanentemente na LUMI: é obtida temporariamente a partir da Meta e enviada à API de visão escolhida para processamento, apenas depois do consentimento explícito. A API OpenAI não utiliza dados para treinar modelos por omissão, mas pode reter registos para monitorização de abuso até 30 dias nas condições padrão. **É necessário cumprir o RGPD, especialmente para dados de saúde (categoria especial), e definir responsabilidades, transparência e retenção antes de disponibilizar a utilizadores reais.** Não usar dados de idosos ou pacientes reais nos primeiros testes.
+
+### WhatsApp: ativação técnica do piloto
+
+- Executar no Supabase `supabase/support.sql` (se já foi executado, não repetir), `supabase/whatsapp-free-replies.sql` e a nova migração adicional **`supabase/channel-workflows.sql`**.
+- Meta Business: criar WhatsApp Business Account e app com produto WhatsApp, permissões adequadas, número empresarial, webhook de mensagens assinado. Ver passos de variáveis `META_WA_*` na secção de WhatsApp do README.
+- `META_WA_FREE_REPLIES_ENABLED=true`: permite o envio de respostas, com limite de 100/mês por omissão (contagem local; partilhada com os outros fluxos Meta). A Meta pode cobrar mensagens além da franquia e serviços de IA gerais podem ter regras específicas. Rever `https://www.whatsapp.com/legal/business-solution-terms` antes de comercializar bots universais no WhatsApp. A primeira versão é focada em **tarefas específicas de cada negócio**, não num chatbot generalista na rede Meta.
+- `OPENAI_API_KEY`: chave secreta da API para leitura de fotos e escrita de rascunhos. Não é o mesmo que uma subscrição ChatGPT. A IA tem um teto local de **3 pedidos de documento/foto por dia e 40/mês** por operador, até ajuste técnico.
+- `LUMI_AGENT_CHANNELS_ENABLED=true`: ativa os novos fluxos em texto/WhatsApp/SMS (desativado por omissão). **Não ativa saúde**, que tem segundo interruptor separado. É recomendável começar num ambiente de testes, com fotos fictícias.
+- A API continua a funcionar inicialmente para a **loja piloto** indicada por `META_WA_OWNER_ID`. Para que cada utilizador da LUMI possa associar o seu próprio número e app Meta será necessária uma etapa de onboarding multiempresa, autenticação e quotas separadas.
+
+### SMS em duas direções: TextBee
+
+O serviço TextBee envia e recebe **texto SMS exclusivamente; não recebe imagens/MMS**. Para ligar respostas automáticas SMS, além de `TEXTBEE_API_KEY`:
+1. Configurar `TEXTBEE_INBOUND_ENABLED=true`, `TEXTBEE_OWNER_ID` (UUID do utilizador piloto Supabase), `TEXTBEE_WEBHOOK_SECRET` (mínimo 20 caracteres aleatórios), sempre como Secrets da Vercel.
+2. No TextBee, ativar **Receive SMS** no Android e criar webhook para `https://lumi-studio-two.vercel.app/api/support/textbee` com evento `MESSAGE_RECEIVED` e exatamente o mesmo segredo. As assinaturas HMAC-SHA256 são verificadas.
+3. Executar `supabase/channel-workflows.sql`; ativar o perfil de atendimento do dono na LUMI; testar com outro telemóvel.
+4. O protótipo limita respostas automáticas a **5/dia e 30/mês**, independentemente do limite gratuito do TextBee. O teu operador móvel pode cobrar envios; outros SMS enviados pelo Android não entram neste contador.
+
+### Ficheiros privados e custo
+
+- Links de rascunhos/agenda contêm tokens aleatórios; expiram em 48h. Evitar partilhá-los publicamente. Não há armazenamento permanente das imagens, mas há texto e dados clínicos estruturados temporários na base de dados.
+- `supabase/channel-workflows.sql` cria `cleanup_support_agent_expired()` para limpar links vencidos e sessões antigas. A função requer execução periódica autorizada; **não corre automaticamente** só por executar SQL. Em produção, definir agendamento e processos de eliminação para todos os serviços.
+- Um limite local de mensagens Meta protege contra respostas descontroladas, mas não controla a cobrança da Meta se outras apps usarem o mesmo número. Os limites de chamadas IA e de SMS são defensivos mas não substituem limites de faturação nas plataformas.
+- Documentos de projeto são **rascunhos informativos** e têm de ser revistos por arquiteto/engenheiro; lembretes dependem de uma receita confirmada.
+
