@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import {BrainCircuit,BookOpen,Sparkles,Trash2} from "lucide-react";
+import WorldPanel from "./world-panel";
 
 type Provider={id:"lumi"|"openai"|"anthropic"|"gemini";name:string;model:string;configured:boolean};
 type Task="chat"|"code"|"plan"|"summarize";
@@ -21,6 +22,7 @@ export default function AiRouterPanel(){
  const [noteTitle,setNoteTitle]=useState("");
  const [noteContent,setNoteContent]=useState("");
  const [useKnowledge,setUseKnowledge]=useState(false);
+ const [useWorld,setUseWorld]=useState(true);
  const [knowledgeMessage,setKnowledgeMessage]=useState("");
  const [saving,setSaving]=useState(false);
 
@@ -45,11 +47,11 @@ export default function AiRouterPanel(){
   try{
    const response=await fetch("/api/ai/chat",{method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({prompt,task,provider,useKnowledge})});
+    body:JSON.stringify({prompt,task,provider,useKnowledge,useWorld})});
    const data=await response.json();
    if(!response.ok)throw new Error(data.error||"Não foi possível gerar a resposta.");
    setAnswer(data.text||"");setOrigin(data.provider+" · "+data.model);
-   setMessage("LUMI AI respondeu. Notas consultadas: "+(data.knowledgeUsed||0)+". Nenhuma ação externa executada.");
+   setMessage("LUMI AI respondeu. Notas pessoais: "+(data.knowledgeUsed||0)+". Referências públicas: "+(data.worldUsed||0)+". Nenhuma ação externa executada.");
   }catch(e){setMessage(e instanceof Error?e.message:"Falha ao contactar a IA.");}
   finally{setBusy(false);}
  }
@@ -116,6 +118,10 @@ export default function AiRouterPanel(){
     placeholder="Olá LUMI AI! Ajuda-me a criar um bot para o Discord."/>
   </div>
   <label style={{display:"flex",alignItems:"center",gap:9,marginBottom:12}}>
+   <input type="checkbox" checked={useWorld} onChange={e=>setUseWorld(e.target.checked)}/>
+   Usar referências externas do LUMI Mundo (títulos públicos, não verificados)
+  </label>
+  <label style={{display:"flex",alignItems:"center",gap:9,marginBottom:12}}>
    <input type="checkbox" checked={useKnowledge} onChange={e=>setUseKnowledge(e.target.checked)}/>
    Consultar notas relevantes da minha biblioteca neste pedido
   </label>
@@ -147,5 +153,7 @@ export default function AiRouterPanel(){
     <button className="tiny-btn" disabled={saving} onClick={()=>void removeNote(n.id)} aria-label={"Eliminar nota "+n.title}><Trash2 size={14}/></button>
    </div>)}
   </div>
- </section></>;
+ </section>
+ <WorldPanel/>
+ </>;
 }
