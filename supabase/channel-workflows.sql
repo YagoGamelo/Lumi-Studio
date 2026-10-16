@@ -53,3 +53,33 @@ begin
 end; $$;
 revoke all on function public.cleanup_support_agent_expired() from public,anon,authenticated;
 grant execute on function public.cleanup_support_agent_expired() to service_role;
+
+-- Custos: reserva atómica para responder a SMS (contabiliza envios automáticos locais).
+-- Não consegue contabilizar SMS enviados manualmente no Android; configurar o tarifário.
+create table if not exists public.support_sms_reply_budgets(
+ day_utc date primary key,
+ month_utc text not null,
+ attempts int not null default 0 check(attempts>=0)
+);
+alter table public.support_sms_reply_budgets enable row level security;
+revoke all on public.support_sms_reply_budgets from anon,authenticated;
+create or replace function public.reserve_support_sms_reply(p_day_cap integer default 5,p_month_cap integer default 30)
+returns boolean language plpgsql security definer set search_path=public as $$
+declare today date:=(now() at time zone 'UTC')::date;
+declare month_key text:=to_char(now() at time zone 'UTC','YYYY-MM');
+declare month_total integer;
+declare day_total integer;
+begin
+ if p_day_cap<1 or p_day_cap>20 or p_month_cap<1 or p_month_cap>200 then return false; end if;
+ perform pg_advisory_xact_lock(5130929);
+ select coalesce(sum(attempts),0) into month_total
+ from public.support_sms_reply_budgets where month_utc=month_key;
+ if month_total>=p_month_cap then return false; end if;
+ insert into public.support_sms_reply_budgets(day_utc,month_utc,attempts) values(today,month_key,0)
+ on conflict(day_utc) do nothing;
+ update public.support_sms_reply_budgets set attempts=attempts+1
+ where day_utc=today and attempts<p_day_cap returning attempts into day_total;
+ return day_total is not null;
+end; $$;
+revoke all on function public.reserve_support_sms_reply(integer,integer) from public,anon,authenticated;
+grant execute on function public.reserve_support_sms_reply(integer,integer) to service_role;
