@@ -1,151 +1,267 @@
 "use client";
-import {useEffect,useState} from "react";
-import {BrainCircuit,BookOpen,Sparkles,Trash2} from "lucide-react";
+import {useEffect,useRef,useState} from "react";
+import {BrainCircuit,BookOpen,CheckCircle2,History,MessageSquarePlus,Send,
+ Sparkles,Trash2,Factory,ShieldCheck} from "lucide-react";
 
-type Provider={id:"lumi"|"openai"|"anthropic"|"gemini";name:string;model:string;configured:boolean};
-type Task="chat"|"code"|"plan"|"summarize";
-type Selected="auto"|Provider["id"];
+type Thread={id:string;title:string;created_at:string;updated_at:string};
+type Message={id:string;role:"user"|"assistant";content:string;created_at?:string};
 type Note={id:string;title:string;content:string;created_at:string};
+const QUICK_PROMPTS=[
+ "Quero criar um bot universal do zero. Que informações precisas?",
+ "Desenha um bot Discord com moderação e aprovações.",
+ "Quero automatizar tarefas entre várias aplicações.",
+ "Ajuda-me a testar e melhorar as raízes de um bot."
+];
 
 export default function AiRouterPanel(){
- const [providers,setProviders]=useState<Provider[]>([]);
- const [loading,setLoading]=useState(true);
- const [task,setTask]=useState<Task>("chat");
- const [provider,setProvider]=useState<Selected>("auto");
+ const [threads,setThreads]=useState<Thread[]>([]);
+ const [activeId,setActiveId]=useState<string|null>(null);
+ const [messages,setMessages]=useState<Message[]>([]);
  const [prompt,setPrompt]=useState("");
- const [answer,setAnswer]=useState("");
- const [origin,setOrigin]=useState("");
- const [message,setMessage]=useState("");
  const [busy,setBusy]=useState(false);
+ const [loadingThread,setLoadingThread]=useState(false);
+ const [loading,setLoading]=useState(true);
+ const [available,setAvailable]=useState(false);
+ const [historyOpen,setHistoryOpen]=useState(false);
+ const [notice,setNotice]=useState("");
  const [notes,setNotes]=useState<Note[]>([]);
  const [noteTitle,setNoteTitle]=useState("");
  const [noteContent,setNoteContent]=useState("");
  const [useKnowledge,setUseKnowledge]=useState(false);
  const [knowledgeMessage,setKnowledgeMessage]=useState("");
  const [saving,setSaving]=useState(false);
+ const bottomRef=useRef<HTMLDivElement>(null);
+ const scrollRef=useRef<HTMLDivElement>(null);
+ const requestCounter=useRef(0);
 
+ async function refreshThreads(){
+  const response=await fetch("/api/ai/conversations",{cache:"no-store"});
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||"Não foi possível carregar o histórico.");
+  setThreads(data.conversations||[]);
+ }
  useEffect(()=>{
   let active=true;
-  fetch("/api/ai/providers",{cache:"no-store"}).then(async response=>{
-   const data=await response.json();
-   if(!response.ok)throw new Error(data.error||"Não foi possível consultar as IAs.");
-   if(active)setProviders(data.providers||[]);
-  }).catch(e=>{if(active)setMessage(e instanceof Error?e.message:"Erro de ligação.");})
-   .finally(()=>{if(active)setLoading(false);});
-  fetch("/api/ai/knowledge",{cache:"no-store"}).then(async response=>{
-   const data=await response.json();
-   if(!response.ok)throw new Error(data.error||"Biblioteca indisponível.");
-   if(active)setNotes(data.items||[]);
-  }).catch(e=>{if(active)setKnowledgeMessage(e instanceof Error?e.message:"Biblioteca indisponível.");});
+  Promise.allSettled([
+   fetch("/api/ai/providers",{cache:"no-store"}).then(r=>r.json()).then(data=>{
+    if(active)setAvailable(Boolean(data.providers?.some((x:{configured:boolean})=>x.configured)));
+   }),
+   fetch("/api/ai/conversations",{cache:"no-store"}).then(async r=>{
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||"Histórico indisponível.");
+    if(active)setThreads(data.conversations||[]);
+   }),
+   fetch("/api/ai/knowledge",{cache:"no-store"}).then(async r=>{
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||"Biblioteca indisponível.");
+    if(active)setNotes(data.items||[]);
+   }).catch(e=>{
+    if(active)setKnowledgeMessage(e instanceof Error?e.message:"Biblioteca indisponível.");
+   })
+  ]).then(results=>{
+   const failure=results[1];
+   if(active&&failure.status==="rejected")
+    setNotice(failure.reason instanceof Error?failure.reason.message:"O histórico não está configurado.");
+  }).finally(()=>{if(active)setLoading(false);});
   return ()=>{active=false;};
  },[]);
+ useEffect(()=>{
+  if(scrollRef.current)scrollRef.current.scrollTop=scrollRef.current.scrollHeight;
+ },[messages,busy,activeId]);
 
+ async function openThread(id:string){
+  if(busy||loadingThread)return;
+  const key=++requestCounter.current;
+  setLoadingThread(true);setNotice("");setHistoryOpen(false);
+  try{
+   const response=await fetch("/api/ai/conversations/"+encodeURIComponent(id),{cache:"no-store"});
+   const data=await response.json();
+   if(!response.ok)throw new Error(data.error||"Não foi possível abrir a conversa.");
+   if(key!==requestCounter.current)return;
+   setActiveId(id);setMessages(data.messages||[]);setPrompt("");
+  }catch(e){if(key===requestCounter.current)setNotice(e instanceof Error?e.message:"Falha ao abrir conversa.");}
+  finally{if(key===requestCounter.current)setLoadingThread(false);}
+ }
+ function newThread(){
+  if(busy)return;
+  ++requestCounter.current;setActiveId(null);setMessages([]);
+  setPrompt("");setNotice("");setHistoryOpen(false);
+ }
+ async function removeThread(id:string){
+  if(busy||!window.confirm("Eliminar esta conversa e todas as suas mensagens?"))return;
+  setNotice("");
+  try{
+   const response=await fetch("/api/ai/conversations/"+encodeURIComponent(id),{method:"DELETE"});
+   const data=await response.json();
+   if(!response.ok)throw new Error(data.error||"Falha ao eliminar conversa.");
+   setThreads(old=>old.filter(x=>x.id!==id));
+   if(activeId===id){setActiveId(null);setMessages([]);}
+   setNotice("Conversa eliminada.");
+  }catch(e){setNotice(e instanceof Error?e.message:"Não foi possível eliminar.");}
+ }
  async function submit(){
-  setBusy(true);setMessage("");setAnswer("");setOrigin("");
+  const text=prompt.trim();
+  if(busy||loadingThread||text.length<3||!available)return;
+  setBusy(true);setNotice("");setPrompt("");
+  const localMessage:Message={id:"pending-"+Date.now(),role:"user",content:text};
+  setMessages(old=>[...old,localMessage]);
   try{
    const response=await fetch("/api/ai/chat",{method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({prompt,task,provider,useKnowledge})});
+    body:JSON.stringify({prompt:text,conversationId:activeId,useKnowledge})});
    const data=await response.json();
-   if(!response.ok)throw new Error(data.error||"Não foi possível gerar a resposta.");
-   setAnswer(data.text||"");setOrigin(data.provider+" · "+data.model);
-   setMessage("LUMI AI respondeu. Notas consultadas: "+(data.knowledgeUsed||0)+". Nenhuma ação externa executada.");
-  }catch(e){setMessage(e instanceof Error?e.message:"Falha ao contactar a IA.");}
-  finally{setBusy(false);}
+   if(!response.ok)throw new Error(data.error||"A LUMI não conseguiu responder.");
+   const answer:Message={id:"answer-"+Date.now(),role:"assistant",content:data.text||""};
+   setMessages(old=>[...old,answer]);
+   if(data.saved&&data.conversationId)setActiveId(data.conversationId);
+   setNotice(data.saved?"":data.warning||"Resposta recebida, mas o histórico não foi guardado.");
+   if(data.saved)await refreshThreads().catch(()=>setNotice("Resposta guardada, mas não foi possível atualizar a lista de conversas."));
+  }catch(e){
+   setMessages(old=>old.filter(item=>item.id!==localMessage.id));
+   setPrompt(text);
+   setNotice(e instanceof Error?e.message:"Erro ao contactar a LUMI AI.");
+  }finally{setBusy(false);}
  }
 
  async function saveNote(){
   setSaving(true);setKnowledgeMessage("");
   try{
-   const response=await fetch("/api/ai/knowledge",{method:"POST",
-    headers:{"Content-Type":"application/json"},
+   const response=await fetch("/api/ai/knowledge",{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({title:noteTitle,content:noteContent})});
    const data=await response.json();
    if(!response.ok)throw new Error(data.error||"Não foi possível guardar.");
    setNotes(old=>[data.item,...old]);setNoteTitle("");setNoteContent("");
-   setKnowledgeMessage("Nota privada guardada. Só será consultada nos pedidos em que autorizares.");
+   setKnowledgeMessage("Nota privada guardada. Não é usada para treinar a LUMI.");
   }catch(e){setKnowledgeMessage(e instanceof Error?e.message:"Erro ao guardar.");}
   finally{setSaving(false);}
  }
-
  async function removeNote(id:string){
-  if(!window.confirm("Eliminar definitivamente esta nota da biblioteca LUMI?"))return;
+  if(!window.confirm("Eliminar esta nota da biblioteca privada?"))return;
   setSaving(true);setKnowledgeMessage("");
   try{
    const response=await fetch("/api/ai/knowledge",{method:"DELETE",
     headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});
-   const data=await response.json();
-   if(!response.ok)throw new Error(data.error||"Erro ao eliminar.");
-   setNotes(old=>old.filter(x=>x.id!==id));
+   if(!response.ok){const data=await response.json();throw new Error(data.error||"Erro ao eliminar.");}
+   setNotes(old=>old.filter(item=>item.id!==id));
    setKnowledgeMessage("Nota eliminada.");
   }catch(e){setKnowledgeMessage(e instanceof Error?e.message:"Erro ao eliminar.");}
   finally{setSaving(false);}
  }
 
- const active=providers.filter(p=>p.configured);
- return <><div className="heading-row"><div>
-  <h1><BrainCircuit size={24}/> LUMI AI · Cérebro híbrido</h1>
-  <p>A tua inteligência central: modelo próprio quando estiver alojado e, como ferramentas auxiliares, OpenAI, Gemini e Claude.</p>
- </div></div>
- <section className="section-panel">
-  <h2>O cérebro e as IAs disponíveis</h2>
-  <p className="muted-info">«Configurada» significa que existem credenciais no servidor, não que o modelo foi testado. A LUMI tem identidade própria mesmo quando consulta outras IAs.</p>
-  <div className="connect-grid" style={{marginTop:12}}>
-   {providers.map(p=><div className="connect-card" key={p.id}>
-    <span className="bot-icon"><BrainCircuit size={18}/></span>
-    <div><strong>{p.name}</strong><small>{p.model} · {p.configured?"Configurada":"Não configurada"}</small></div>
-   </div>)}
+ return <div className="lumi-ai-page">
+  <div className="lumi-ai-top">
+   <div>
+    <span className="lumi-ai-eyebrow"><Sparkles size={14}/> A tua inteligência central</span>
+    <h1><BrainCircuit size={27}/> LUMI AI</h1>
+    <p>O cérebro da tua fábrica de bots universais. Planeia, constrói ideias e evolui com testes.</p>
+   </div>
+   <a className="lumi-builder-link" href="/dashboard?tab=bots"><Factory size={16}/> Abrir LUMI Builder</a>
   </div>
-  {loading&&<p className="muted-info">A consultar os modelos...</p>}
-  {!loading&&!active.length&&<p className="muted-info">É necessário configurar pelo menos uma IA na Vercel ou alojar o modelo próprio num servidor seguro.</p>}
- </section>
- <section className="section-panel" style={{marginTop:16}}>
-  <h2><Sparkles size={19}/> Conversar com a LUMI AI</h2>
-  <div className="select-row">
-   <div className="form-field"><label>Tipo de tarefa</label><select value={task} onChange={e=>setTask(e.target.value as Task)}>
-    <option value="chat">Conversar</option><option value="code">Programar</option>
-    <option value="plan">Planear</option><option value="summarize">Resumir</option>
-   </select></div>
-   <div className="form-field"><label>Motor a utilizar</label><select value={provider} onChange={e=>setProvider(e.target.value as Selected)}>
-    <option value="auto">Automático — LUMI escolhe</option>
-    {providers.map(p=><option key={p.id} value={p.id} disabled={!p.configured}>{p.name}{p.configured?"":" (indisponível)"}</option>)}
-   </select></div>
+  <div className="lumi-chat-layout">
+   <aside className={"lumi-thread-sidebar"+(historyOpen?" is-open":"")} aria-label="Histórico das minhas conversas">
+    <div className="lumi-thread-head">
+     <strong><History size={17}/> Conversas</strong>
+     <button type="button" className="lumi-thread-new" disabled={busy} onClick={newThread}>
+      <MessageSquarePlus size={15}/> Nova
+     </button>
+    </div>
+    <div className="lumi-thread-list">
+     {loading&&<small>Carregando...</small>}
+     {!loading&&!threads.length&&<p>Ainda não tens conversas guardadas. Começa a falar com a LUMI.</p>}
+     {threads.map(t=><div className={"lumi-thread-item"+(t.id===activeId?" active":"")} key={t.id}>
+      <button type="button" onClick={()=>void openThread(t.id)} disabled={busy||loadingThread}
+       aria-current={t.id===activeId?"page":undefined} title={t.title}>
+       <strong>{t.title}</strong>
+       <small>{new Date(t.updated_at).toLocaleDateString("pt-PT",{day:"2-digit",month:"short"})}</small>
+      </button>
+      <button type="button" className="lumi-thread-delete" disabled={busy||loadingThread}
+       onClick={()=>void removeThread(t.id)} aria-label={"Eliminar conversa "+t.title}>
+       <Trash2 size={15}/>
+      </button>
+     </div>)}
+    </div>
+    <div className="lumi-thread-privacy"><ShieldCheck size={15}/>
+     <span>Histórico privado da tua conta. Podes apagar as conversas.</span>
+    </div>
+   </aside>
+   <section className="lumi-chat-stage" aria-label="Conversa com a LUMI AI">
+    <header className="lumi-chat-header">
+     <span className="lumi-chat-identity"><span className="lumi-ai-avatar"><BrainCircuit size={21}/></span>
+      <span><strong>LUMI AI</strong><small>Especialista em bots universais</small></span>
+     </span>
+     <div className="lumi-chat-header-actions">
+      <button className="lumi-mobile-history" type="button" onClick={()=>setHistoryOpen(old=>!old)}>
+       <History size={17}/> Histórico
+      </button>
+      <button type="button" onClick={newThread} disabled={busy} className="lumi-new-chat">
+       <MessageSquarePlus size={16}/> <span>Nova conversa</span>
+      </button>
+     </div>
+    </header>
+    <div className="lumi-chat-scroll" ref={scrollRef} role="log" aria-live="polite">
+     {!messages.length&&!loadingThread&&<div className="lumi-chat-welcome">
+      <div className="lumi-welcome-logo"><BrainCircuit size={36}/></div>
+      <h2>Vamos criar algo extraordinário?</h2>
+      <p>Sou a LUMI AI. O meu foco é ajudar-te a imaginar, planear e aperfeiçoar bots para qualquer finalidade. Podemos continuar a desenvolver ideias em várias conversas.</p>
+      <div className="lumi-quick-prompts">
+       {QUICK_PROMPTS.map(text=><button type="button" key={text} onClick={()=>setPrompt(text)}
+        disabled={busy||!available}>{text}</button>)}
+      </div>
+     </div>}
+     {loadingThread&&<p className="lumi-chat-loading">A abrir a tua conversa...</p>}
+     {messages.map(message=><div key={message.id} className={"lumi-chat-row "+message.role}>
+      {message.role==="assistant"&&<span className="lumi-msg-avatar"><BrainCircuit size={16}/></span>}
+      <div className="lumi-chat-bubble">
+       {message.role==="assistant"&&<strong>LUMI AI</strong>}
+       <p>{message.content}</p>
+      </div>
+     </div>)}
+     {busy&&<div className="lumi-chat-row assistant"><span className="lumi-msg-avatar"><BrainCircuit size={16}/></span>
+      <div className="lumi-chat-bubble"><p>A LUMI está a preparar a resposta...</p></div>
+     </div>}
+     <div ref={bottomRef}/>
+    </div>
+    <form className="lumi-chat-compose" onSubmit={event=>{event.preventDefault();void submit();}}>
+     {notice&&<p className="lumi-chat-notice" role="status">{notice}</p>}
+     {!available&&!loading&&<p className="lumi-chat-notice" role="status">
+      Ainda não há um motor de IA disponível. Verifica a configuração na Vercel.
+     </p>}
+     <div className="lumi-compose-row">
+      <textarea aria-label="Mensagem para a LUMI AI" rows={2} maxLength={4000}
+       value={prompt} onChange={event=>setPrompt(event.target.value)}
+       placeholder="Fala com a LUMI... Que bot vamos criar ou melhorar?"/>
+      <button type="submit" aria-label="Enviar mensagem" disabled={busy||loadingThread||!available||prompt.trim().length<3}>
+       <Send size={19}/>
+      </button>
+     </div>
+     <label className="lumi-chat-consent">
+      <input type="checkbox" checked={useKnowledge} onChange={e=>setUseKnowledge(e.target.checked)}/>
+      Consultar a minha biblioteca privada nesta resposta
+     </label>
+     <small>O histórico serve para retomares conversas. A LUMI não o utiliza para treinar modelos; pedidos podem ser enviados à API de inferência configurada. Beta: 20 respostas/dia.</small>
+    </form>
+   </section>
   </div>
-  <div className="form-field"><label>O teu pedido</label>
-   <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} maxLength={4000}
-    placeholder="Olá LUMI AI! Ajuda-me a criar um bot para o Discord."/>
-  </div>
-  <label style={{display:"flex",alignItems:"center",gap:9,marginBottom:12}}>
-   <input type="checkbox" checked={useKnowledge} onChange={e=>setUseKnowledge(e.target.checked)}/>
-   Consultar notas relevantes da minha biblioteca neste pedido
-  </label>
-  <button className="btn" disabled={busy||!active.length||prompt.trim().length<3} onClick={()=>void submit()}>
-   <Sparkles size={16}/>{busy?"A consultar...":"Pedir à LUMI AI"}
-  </button>
-  {message&&<p className="muted-info" role="status" style={{marginTop:14}}>{message}</p>}
-  {answer&&<div style={{marginTop:16}}><strong>Resposta da LUMI AI · motor: {origin}</strong>
-   <pre style={{whiteSpace:"pre-wrap",fontFamily:"inherit",lineHeight:1.6,overflowWrap:"anywhere",marginTop:10}}>{answer}</pre>
-  </div>}
-  <p className="muted-info" style={{marginTop:16}}>Limite beta: 20 tentativas por dia. As IAs externas recebem o pedido e, apenas com a opção acima ativada, as notas selecionadas. Não coloques palavras-passe ou dados sensíveis.</p>
- </section>
- <section className="section-panel" style={{marginTop:16}}>
-  <h2><BookOpen size={19}/> Biblioteca de conhecimento LUMI</h2>
-  <p className="muted-info">Guarda apenas informação que tens direito a utilizar. A memória é privada da tua conta, não é treino automático, e não entra nos pedidos sem autorização. Até 50 notas nesta beta.</p>
-  <div className="form-field"><label>Título da nota</label>
-   <input value={noteTitle} maxLength={80} onChange={e=>setNoteTitle(e.target.value)} placeholder="Ex.: Regras do meu servidor Discord"/>
-  </div>
-  <div className="form-field"><label>Conhecimento</label>
-   <textarea value={noteContent} maxLength={1500} onChange={e=>setNoteContent(e.target.value)} placeholder="Escreve as regras ou informações que a LUMI deve poder consultar."/>
-  </div>
-  <button className="btn-outline" disabled={saving||noteTitle.trim().length<3||noteContent.trim().length<10} onClick={()=>void saveNote()}>
-   <BookOpen size={16}/> Guardar nota
-  </button>
-  {knowledgeMessage&&<p className="muted-info" role="status" style={{marginTop:10}}>{knowledgeMessage}</p>}
-  <div style={{display:"grid",gap:10,marginTop:16}}>
-   {notes.map(n=><div className="connect-card" key={n.id}>
-    <div style={{flex:1}}><strong>{n.title}</strong><small>{n.content}</small></div>
-    <button className="tiny-btn" disabled={saving} onClick={()=>void removeNote(n.id)} aria-label={"Eliminar nota "+n.title}><Trash2 size={14}/></button>
-   </div>)}
-  </div>
- </section></>;
+  <details className="lumi-chat-knowledge">
+   <summary><BookOpen size={19}/> Biblioteca de conhecimento privada <span>Gerir notas</span></summary>
+   <div className="lumi-knowledge-inner">
+    <p className="muted-info">Estas notas são apenas tuas. A LUMI só as consulta quando ativares a opção no chat. Não são usadas para treino do modelo.</p>
+    <div className="form-field"><label>Título da nota</label>
+     <input maxLength={80} value={noteTitle} onChange={e=>setNoteTitle(e.target.value)} placeholder="Ex.: Estrutura dos meus bots"/>
+    </div>
+    <div className="form-field"><label>Informação</label>
+     <textarea maxLength={1500} value={noteContent} onChange={e=>setNoteContent(e.target.value)} placeholder="Conhecimento que autorizo a LUMI a consultar"/>
+    </div>
+    <button className="btn-outline" type="button" disabled={saving||noteTitle.trim().length<3||noteContent.trim().length<10}
+     onClick={()=>void saveNote()}><CheckCircle2 size={16}/> Guardar nota</button>
+    {knowledgeMessage&&<p className="muted-info" role="status">{knowledgeMessage}</p>}
+    {notes.map(n=><div className="lumi-knowledge-item" key={n.id}>
+     <div><strong>{n.title}</strong><p>{n.content}</p></div>
+     <button type="button" onClick={()=>void removeNote(n.id)} disabled={saving} aria-label={"Eliminar nota "+n.title}>
+      <Trash2 size={15}/>
+     </button>
+    </div>)}
+   </div>
+  </details>
+ </div>;
 }
