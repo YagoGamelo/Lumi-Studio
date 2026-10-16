@@ -352,3 +352,8 @@ O serviço TextBee envia e recebe **texto SMS exclusivamente; não recebe imagen
 O painel **LUMI IA** permite conversar, planear, programar e resumir através de OpenAI, Claude ou Gemini quando as respetivas chaves estiverem configuradas. O Universal Builder também usa esta escolha automática, com fallback por regras. **Para ativar chamadas externas, é obrigatório executar a migração adicional `supabase/ai-router.sql`.**
 
 Consulta [docs/ai-router.md](docs/ai-router.md) para configuração segura na Vercel, limites, autenticação e testes. A IA neste módulo só gera texto; não executa ações externas nem aprende autonomamente.
+
+
+## LUMI AI — inteligência híbrida própria
+
+A identidade principal do produto é a **LUMI AI**. O Router pode usar um modelo com pesos disponíveis num servidor de inferência privado e/ou OpenAI, Claude e Gemini. A biblioteca de notas do utilizador exige consentimento explícito em cada pedido; não constitui treino automático de modelos. O modelo próprio não corre na Vercel e não funciona até ser alojado num servidor seguro. Consulta [docs/lumi-hybrid-ai.md](docs/lumi-hybrid-ai.md). Para ativar as notas, executar a migração adicional **supabase/lumi-knowledge.sql** no SQL Editor.
