@@ -104,15 +104,20 @@ export async function workflowReply(ctx:AgentContext,normalReply:()=>Promise<str
  const incoming=ctx.text.trim();
  const command=incoming.toLocaleUpperCase("pt-PT").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
  if(command==="APAGAR DADOS"||command==="REVOGAR"){
-  await db.from("support_agent_artifacts").delete().eq("user_id",ctx.ownerId)
+  const a=await db.from("support_agent_artifacts").delete().eq("user_id",ctx.ownerId)
    .eq("channel",ctx.channel).eq("sender_hash",ctx.senderHash);
-  await db.from("support_channel_sessions").delete().eq("user_id",ctx.ownerId)
+  const b=await db.from("support_channel_sessions").delete().eq("user_id",ctx.ownerId)
    .eq("channel",ctx.channel).eq("sender_hash",ctx.senderHash);
-  const {data:convs}=await db.from("support_conversations").select("id")
+  const {data:convs,error:lookupErr}=await db.from("support_conversations").select("id")
    .eq("user_id",ctx.ownerId).eq("channel",ctx.channel)
    .eq("customer_reference_hash",ctx.senderHash);
-  if(convs?.length)await db.from("support_conversations").delete()
-   .eq("user_id",ctx.ownerId).in("id",convs.map(x=>x.id));
+  let delError:null|unknown=null;
+  if(convs?.length){
+   const cleared=await db.from("support_conversations").delete()
+    .eq("user_id",ctx.ownerId).in("id",convs.map(x=>x.id));
+   delError=cleared.error;
+  }
+  if(a.error||b.error||lookupErr||delError)return "Não consegui confirmar a eliminação total na LUMI. Contacta o responsável para concluir o pedido de privacidade.";
   return "Eliminei os rascunhos, autorizações e histórico desta conversa na LUMI. O WhatsApp, o SMS e serviços de IA podem conservar os seus próprios registos. Para outros pedidos de privacidade, contacta o responsável da LUMI.";
  }
  if(command==="AUTORIZO FOTOS"){
