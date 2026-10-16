@@ -4,6 +4,7 @@ import OpenAI from "openai";
 export type AiProvider="lumi"|"openai"|"anthropic"|"gemini";
 export type AiTask="chat"|"code"|"plan"|"summarize";
 export type ProviderSelection="auto"|AiProvider;
+export type AiTurn={role:"user"|"assistant";content:string};
 type ProviderConfig={id:AiProvider;name:string;model:string;configured:boolean};
 
 /**
@@ -67,11 +68,15 @@ export function chooseAiProvider(task:AiTask,requested:ProviderSelection="auto")
 }
 
 export async function generateAiText(input:{
- task:AiTask;prompt:string;system:string;provider?:ProviderSelection;json?:boolean;
+ task:AiTask;prompt:string;system:string;provider?:ProviderSelection;json?:boolean;history?:AiTurn[];
 }):Promise<{text:string;provider:AiProvider;model:string}>{
  const {task,prompt,system,json=false}=input;
  const selected=chooseAiProvider(task,input.provider??"auto");
  if(prompt.length>5000||system.length>4500)throw new Error("PROMPT_TOO_LONG");
+ // History is context only, never new system instructions; bound token/cost usage.
+ const prior=(input.history||[]).slice(-8).filter(x=>x.role==="user"||x.role==="assistant")
+  .map(x=>({role:x.role,content:x.content.slice(0,1000)} as AiTurn));
+ const messages:AiTurn[]=[...prior,{role:"user",content:prompt}];
  let answer="";
  if(selected.id==="openai"||selected.id==="lumi"){
   const client=new OpenAI({
@@ -81,7 +86,7 @@ export async function generateAiText(input:{
   });
   const response=await client.chat.completions.create({
    model:selected.model,
-   messages:[{role:"system",content:system},{role:"user",content:prompt}],
+   messages:[{role:"system",content:system},...messages],
    ...(json?{response_format:{type:"json_object" as const}}:{}),
    max_tokens:850
   });
@@ -92,7 +97,7 @@ export async function generateAiText(input:{
    headers:{"content-type":"application/json","x-api-key":process.env.ANTHROPIC_API_KEY!,
     "anthropic-version":"2023-06-01"},
    body:JSON.stringify({model:selected.model,max_tokens:850,system,messages:[
-    {role:"user",content:json?"Responde apenas com JSON válido.\n"+prompt:prompt}
+    ...messages.map((item,index)=>({role:item.role,content:json&&index===messages.length-1?"Responde apenas com JSON válido.\n"+item.content:item.content}))
    ]})
   });
   if(!response.ok)throw new Error("AI_PROVIDER_ERROR");
@@ -105,7 +110,7 @@ export async function generateAiText(input:{
    headers:{"content-type":"application/json","x-goog-api-key":process.env.GEMINI_API_KEY!},
    body:JSON.stringify({
     systemInstruction:{parts:[{text:system}]},
-    contents:[{role:"user",parts:[{text:prompt}]}],
+    contents:messages.map(item=>({role:item.role==="assistant"?"model":"user",parts:[{text:item.content}]})),
     generationConfig:{maxOutputTokens:850,...(json?{responseMimeType:"application/json"}:{})}
    })
   });
