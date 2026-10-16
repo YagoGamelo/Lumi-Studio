@@ -322,3 +322,26 @@ O serviço TextBee envia e recebe **texto SMS exclusivamente; não recebe imagen
 - Um limite local de mensagens Meta protege contra respostas descontroladas, mas não controla a cobrança da Meta se outras apps usarem o mesmo número. Os limites de chamadas IA e de SMS são defensivos mas não substituem limites de faturação nas plataformas.
 - Documentos de projeto são **rascunhos informativos** e têm de ser revistos por arquiteto/engenheiro; lembretes dependem de uma receita confirmada.
 
+
+
+## LUMI Universal Builder — raízes de capacidades
+
+**Visão:** um criador de agentes em que o cliente descreve o objetivo e a LUMI compõe capacidades independentes. Isto não significa execução literalmente ilimitada nem autonomia instantânea: cada conector tem de existir, ser autorizado, testado e ter limites de utilização.
+
+**A nova base (planeamento modular):**
+- `lib/bots/capabilities.ts`: catálogo central de capacidades (conversa, ler fotos, documentos, calendário, Discord, WhatsApp, SMS, vídeo, voz, ficheiros, pesquisa, automações). Acrescentar capacidades neste registo faz crescer o planeador sem criar um novo tipo de bot.
+- `POST /api/bots/plan`: transforma texto livre em título, instruções e uma **árvore de capacidades e dependências**; usa a OpenAI se a API estiver configurada e regras locais se não estiver (sem custo de API neste caso). O modelo só pode selecionar capacidades da lista autorizada.
+- `app/dashboard/bot-blueprint.tsx`: apresenta os módulos, ligações pendentes e ações que exigem confirmação.
+- `supabase/universal-builder.sql`: migração adicional e idempotente para guardar a árvore por bot, isolada por utilizador via RLS. Executar no Supabase SQL Editor **uma vez** depois de `schema.sql`; não apagar tabelas antigas. Os bots ainda podem ser criados sem a migração, mas o plano composto não será guardado.
+- `GET /api/bots/:id/blueprint`: mostra a estrutura guardada ou prepara uma visualização provisória para bots anteriores à migração.
+
+**Exemplo A — Agenda e fotografias:** «Quero um bot que receba fotos, organize eventos e avise-me». A LUMI planeia leitura de imagens, agenda, calendário, agendador e confirmação. Para criar eventos na Google Calendar será necessária uma autorização OAuth e uma implementação real da ferramenta.
+
+**Exemplo B — Discord:** «Quero um bot que entre no meu servidor, ouça pedidos de ajuda e responda». A LUMI planeia a compreensão dos pedidos, o acesso Discord, receção de eventos e envio de mensagens com limites. O servidor tem de autorizar a instalação e a permissão de enviar mensagens. O bot **não cria automaticamente uma aplicação Discord nem envia mensagens não solicitadas**.
+
+**Exemplo C — Projetos:** «O cliente envia uma planta por WhatsApp; a LUMI prepara uma memória descritiva e pede a revisão». A árvore combina WhatsApp, fotografias, documentos e aprovação humana; não declara projetos aprovados nem faz medições a partir de fotos.
+
+**Segurança e negócios:** as árvores são dados, nunca código executável nem concessões de OAuth. Cada função executável futura terá: credenciais privadas, RLS por proprietário, permissões mínimas por serviço, revisão explícita de ações sensíveis, limites de custos, logs de execução, idempotência e mecanismos para parar. Não permitir que o modelo execute JavaScript, SQL, comandos, pagamentos, envios ou ações externas a partir de uma árvore sem uma implementação autorizada.
+
+**Estado atual:** só a **criação automática da estrutura** está funcional. As ferramentas externas mostradas como «Planeado» ainda não estão ligadas por este módulo. O caminho de implantação é: registo de capacidades → conector autenticado → teste em ambiente isolado → autorização do utilizador → worker/agendador → execução auditada.
+
