@@ -1,10 +1,12 @@
 import {NextResponse} from "next/server";
 import {createHmac,timingSafeEqual} from "node:crypto";
 import {supportDb,answerBusiness,hashSecret} from "@/lib/support";
+import {workflowReply} from "@/lib/channel-workflows";
+import {metaImageDataUrl} from "@/lib/meta-whatsapp-media";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 export const maxDuration=60;
-type MetaMessage={id?:string;from?:string;timestamp?:string;type?:string;text?:{body?:string}};
+type MetaMessage={id?:string;from?:string;timestamp?:string;type?:string;text?:{body?:string};image?:{id?:string;caption?:string;mime_type?:string}};
 type MetaEvent={object?:string;entry?:Array<{changes?:Array<{value?:{metadata?:{phone_number_id?:string};messages?:MetaMessage[]}}>}>;
 };
 const plain=(value:string,status=200)=>new Response(value,{status,headers:{"Content-Type":"text/plain; charset=utf-8","Cache-Control":"no-store"}});
@@ -35,9 +37,10 @@ function authenticated(body:string,signature:string|null,secret:string){
  return timingSafeEqual(Buffer.from(actual,"hex"),Buffer.from(signature.slice(7),"hex"));
 }
 async function answerOne(c:NonNullable<ReturnType<typeof config>>,m:MetaMessage){
- if(m.type!=="text"||!m.id||m.id.length>150||!m.from||!/^\d{8,15}$/.test(m.from))return;
- const question=String(m.text?.body||"").trim().slice(0,1000);
- if(!question)return;
+ if(!["text","image"].includes(m.type||"")||!m.id||m.id.length>150||!m.from||!/^\d{8,15}$/.test(m.from))return;
+ if(m.type==="image"&&!m.image?.id)return;
+ const question=String(m.text?.body||m.image?.caption||"").trim().slice(0,1000);
+ if(!question&&m.type!=="image")return;
  // Meta delivers customer-initiated messages, so this is a reply inside that user's 24 h window.
  const db=supportDb();
  const {data:profile}=await db.from("support_profiles").select("user_id,bot_id,business_name,knowledge,enabled,auto_reply").eq("user_id",c.owner).eq("enabled",true).maybeSingle();
@@ -58,13 +61,22 @@ async function answerOne(c:NonNullable<ReturnType<typeof config>>,m:MetaMessage)
   conversationId=created?.id||null;
  }
  if(!conversationId)return;
- await db.from("support_messages").insert({user_id:c.owner,conversation_id:conversationId,role:"customer",body:question});
+ await db.from("support_messages").insert({user_id:c.owner,conversation_id:conversationId,role:"customer",body:m.type==="image"?"[Fotografia recebida] "+question:question});
  if(!profile.auto_reply){
   await db.from("support_conversations").update({status:"needs_human",updated_at:new Date().toISOString()}).eq("id",conversationId);
   return;
  }
  const {data:bot}=profile.bot_id?await db.from("bots").select("instruction").eq("id",profile.bot_id).eq("user_id",c.owner).maybeSingle():{data:null};
- const reply=await answerBusiness({business_name:profile.business_name,knowledge:profile.knowledge,bot_instruction:bot?.instruction||"",question});
+ const reply=process.env.LUMI_AGENT_CHANNELS_ENABLED==="true"
+  ?{answer:await workflowReply({
+    ownerId:c.owner,channel:"whatsapp",senderHash,text:question,imageAvailable:m.type==="image",
+    loadImage:m.type==="image"?()=>metaImageDataUrl(m.image!.id!,c.phone,c.apiToken,c.graphVersion):undefined,
+    botInstruction:bot?.instruction||"",businessName:profile.business_name,knowledge:profile.knowledge
+   },async()=>{
+    const standard=await answerBusiness({business_name:profile.business_name,knowledge:profile.knowledge,bot_instruction:bot?.instruction||"",question});
+    return standard.answer;
+   }),needsHuman:false}
+  :await answerBusiness({business_name:profile.business_name,knowledge:profile.knowledge,bot_instruction:bot?.instruction||"",question:question||"O cliente enviou uma fotografia que ainda não posso analisar."});
  const utcMonth=new Date().toISOString().slice(0,7);
  const {data:approved,error:quotaError}=await db.rpc("reserve_meta_free_reply",{
   p_phone_number_id:c.phone,p_month_utc:utcMonth,p_limit:c.monthlyBudget
@@ -100,7 +112,7 @@ export async function POST(req:Request){
   for(const change of (entry.changes||[])){
    if(change.value?.metadata?.phone_number_id!==c.phone)continue;
    for(const msg of (change.value.messages||[])){
-    if(msg.type==="text")incoming.push(msg);
+    if(msg.type==="text"||msg.type==="image")incoming.push(msg);
    }
   }
  }
