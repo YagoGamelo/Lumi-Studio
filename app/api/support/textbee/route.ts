@@ -65,6 +65,11 @@ export async function POST(req:Request){
   await db.from("support_conversations").update({status:"needs_human"}).eq("id",conversationId);
   return plain("OK");
  }
+ const {data:reserved,error}=await db.rpc("reserve_support_sms_reply",{p_day_cap:5,p_month_cap:30});
+ if(error||!reserved){
+  await db.from("support_conversations").update({status:"needs_human"}).eq("id",conversationId);
+  return plain("OK"); // Never send after cap reached.
+ }
  const {data:bot}=profile.bot_id?await db.from("bots").select("instruction")
   .eq("id",profile.bot_id).eq("user_id",s.owner).maybeSingle():{data:null};
  let replyText="";
@@ -81,11 +86,6 @@ export async function POST(req:Request){
  }catch{
   await db.from("support_conversations").update({status:"needs_human"}).eq("id",conversationId);
   return plain("OK");
- }
- const {data:reserved,error}=await db.rpc("reserve_support_sms_reply",{p_day_cap:5,p_month_cap:30});
- if(error||!reserved){
-  await db.from("support_conversations").update({status:"needs_human"}).eq("id",conversationId);
-  return plain("OK"); // Never send after cap reached.
  }
  try{
   const message=outgoingSms(replyText);
