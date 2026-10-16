@@ -357,3 +357,8 @@ Consulta [docs/ai-router.md](docs/ai-router.md) para configuração segura na Ve
 ## LUMI AI — inteligência híbrida própria
 
 A identidade principal do produto é a **LUMI AI**. O Router pode usar um modelo com pesos disponíveis num servidor de inferência privado e/ou OpenAI, Claude e Gemini. A biblioteca de notas do utilizador exige consentimento explícito em cada pedido; não constitui treino automático de modelos. O modelo próprio não corre na Vercel e não funciona até ser alojado num servidor seguro. Consulta [docs/lumi-hybrid-ai.md](docs/lumi-hybrid-ai.md). Para ativar as notas, executar a migração adicional **supabase/lumi-knowledge.sql** no SQL Editor.
+
+
+## LUMI AI — Chat e histórico privado (beta)
+
+A LUMI AI é o único assistente apresentado no separador do painel. O Router escolhe modelos internos ou externos sem obrigar a escolher fornecedor. O chat ocupa a área principal e adapta-se a telemóvel/iPad. A migração ADICIONAL **supabase/lumi-conversations.sql** é obrigatória antes de publicar esta atualização; guarda conversas e mensagens com RLS por utilizador e permite retomar/apagar históricos. O histórico não treina modelos, mas é enviado como contexto ao serviço de inferência configurado quando se gera a resposta. O foco da LUMI é a fábrica de bots universais: proposta de capacidades, dependências, integrações, permissões e testes. A execução real e o número de rascunhos continuam sujeitos aos limites da beta. Ver [docs/lumi-ai-conversations.md](docs/lumi-ai-conversations.md).
