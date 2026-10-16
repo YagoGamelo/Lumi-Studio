@@ -191,5 +191,10 @@ export async function workflowReply(ctx:AgentContext,normalReply:()=>Promise<str
  // A private SMS gateway carries text only. Do not automatically route medical decisions via SMS.
  if(ctx.channel==="sms"&&medRe.test(incoming))return "Sobre medicamentos: confirma com o médico ou farmacêutico. Para fotos e rascunhos de agenda, usa WhatsApp com consentimento.";
  s.topic="general";await updateSession(ctx,s);
+ // No uncapped OpenAI calls from public WhatsApp/SMS in this pilot.
+ const {data:allowed,error:costError}=await supportDb().rpc("reserve_support_agent_ai",{
+  p_owner:ctx.ownerId,p_day_cap:3,p_month_cap:40
+ });
+ if(costError||!allowed)return "Este bot atingiu o limite gratuito de testes de IA. Pede apoio humano ou tenta amanhã.";
  return normalReply();
 }
