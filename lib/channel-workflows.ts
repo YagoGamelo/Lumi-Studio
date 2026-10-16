@@ -108,7 +108,12 @@ export async function workflowReply(ctx:AgentContext,normalReply:()=>Promise<str
    .eq("channel",ctx.channel).eq("sender_hash",ctx.senderHash);
   await db.from("support_channel_sessions").delete().eq("user_id",ctx.ownerId)
    .eq("channel",ctx.channel).eq("sender_hash",ctx.senderHash);
-  return "Apaguei os rascunhos e autorizações desta conversa na LUMI. As mensagens já presentes nos sistemas WhatsApp/SMS e no histórico do atendimento podem ter retenção própria; contacta o responsável para pedir a eliminação.";
+  const {data:convs}=await db.from("support_conversations").select("id")
+   .eq("user_id",ctx.ownerId).eq("channel",ctx.channel)
+   .eq("customer_reference_hash",ctx.senderHash);
+  if(convs?.length)await db.from("support_conversations").delete()
+   .eq("user_id",ctx.ownerId).in("id",convs.map(x=>x.id));
+  return "Eliminei os rascunhos, autorizações e histórico desta conversa na LUMI. O WhatsApp, o SMS e serviços de IA podem conservar os seus próprios registos. Para outros pedidos de privacidade, contacta o responsável da LUMI.";
  }
  if(command==="AUTORIZO FOTOS"){
   s.media_opt_in=true;await updateSession(ctx,s);
