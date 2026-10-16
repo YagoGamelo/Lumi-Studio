@@ -345,3 +345,10 @@ O serviço TextBee envia e recebe **texto SMS exclusivamente; não recebe imagen
 
 **Estado atual:** só a **criação automática da estrutura** está funcional. As ferramentas externas mostradas como «Planeado» ainda não estão ligadas por este módulo. O caminho de implantação é: registo de capacidades → conector autenticado → teste em ambiente isolado → autorização do utilizador → worker/agendador → execução auditada.
 
+
+
+## LUMI AI Router (beta)
+
+O painel **LUMI IA** permite conversar, planear, programar e resumir através de OpenAI, Claude ou Gemini quando as respetivas chaves estiverem configuradas. O Universal Builder também usa esta escolha automática, com fallback por regras. **Para ativar chamadas externas, é obrigatório executar a migração adicional `supabase/ai-router.sql`.**
+
+Consulta [docs/ai-router.md](docs/ai-router.md) para configuração segura na Vercel, limites, autenticação e testes. A IA neste módulo só gera texto; não executa ações externas nem aprende autonomamente.
