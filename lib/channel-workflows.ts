@@ -150,9 +150,9 @@ export async function workflowReply(ctx:AgentContext,normalReply:()=>Promise<str
   const next:Record<string,unknown>={
    name:safeString(result.name,100)||safeString(prior.name,100),
    dose:safeString(result.dose,120)||safeString(prior.dose,120),
-   hours:Number.isInteger(result.hours)&&Number(result.hours)>=1&&Number(result.hours)<=24?result.hours:prior.hours||null,
+   hours:typeof result.hours==="number"&&Number.isInteger(result.hours)&&result.hours>=1&&result.hours<=24?result.hours:prior.hours||null,
    start:/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(safeString(result.start,8))?result.start:prior.start||null,
-   days:Number.isInteger(result.days)&&Number(result.days)>=1&&Number(result.days)<=90?result.days:prior.days||null
+   days:typeof result.days==="number"&&Number.isInteger(result.days)&&result.days>=1&&result.days<=90?result.days:prior.days||null
   };
   s.pending=next;await updateSession(ctx,s);
   const missing=[
